@@ -11,6 +11,7 @@ def registrar_movimiento(
     presentacion_id=None,
     lote_id=None,
     documento_soporte=None,
+    archivo_comprobante=None,
     commit=True
 ):
     """
@@ -93,7 +94,8 @@ def registrar_movimiento(
         stock_anterior=stock_anterior,
         stock_nuevo=stock_nuevo,
         motivo_observaciones=motivo_observaciones.strip(),
-        documento_soporte=documento_soporte.strip() if documento_soporte else None
+        documento_soporte=documento_soporte.strip() if documento_soporte else None,
+        archivo_comprobante=archivo_comprobante.strip() if archivo_comprobante else None
     )
     db.session.add(movimiento)
 

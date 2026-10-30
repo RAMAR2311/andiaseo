@@ -114,6 +114,13 @@
                         <td class="text-end fw-bold">{{ m.stock_nuevo|number }}</td>
                         <td>
                             <span class="badge bg-light text-dark border">{{ m.documento_soporte or '-' }}</span>
+                            {% if m.archivo_comprobante %}
+                            <div class="mt-1">
+                                <a href="{{ url_for('static', filename='uploads/' ~ m.archivo_comprobante) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-1 small" style="font-size: 0.72rem;" title="Ver comprobante adjunto">
+                                    <i class="fa-solid fa-file-arrow-down me-1"></i> Comprobante
+                                </a>
+                            </div>
+                            {% endif %}
                         </td>
                         <td class="small text-muted">{{ m.usuario.nombre }}</td>
                         <td><small class="text-muted">{{ m.motivo_observaciones }}</small></td>

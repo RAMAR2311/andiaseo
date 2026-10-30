@@ -78,6 +78,7 @@ class Producto(db.Model):
     unidad_base = db.Column(db.String(20), nullable=False, default='litros')
     stock_minimo_alerta = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     stock_actual_total = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
+    costo_unitario_base = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     activo = db.Column(db.Boolean, default=True, nullable=False)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -102,11 +103,15 @@ class Producto(db.Model):
 
     @property
     def valor_total_inventario(self):
-        """Valor económico total sumando el inventario de todas sus presentaciones comerciales."""
+        """Valor económico total sumando el inventario de todas sus presentaciones comerciales o de su stock a granel."""
         total = Decimal('0.0')
-        for p in self.presentaciones:
-            if p.activo:
-                total += Decimal(str(p.stock_actual or 0)) * Decimal(str(p.costo_promedio_unitario or 0))
+        if self.presentaciones and len([p for p in self.presentaciones if p.activo]) > 0:
+            for p in self.presentaciones:
+                if p.activo:
+                    total += Decimal(str(p.stock_actual or 0)) * Decimal(str(p.costo_promedio_unitario or 0))
+        else:
+            # Producto a granel / directo
+            total = Decimal(str(self.stock_actual_total or 0)) * Decimal(str(self.costo_unitario_base or 0))
         return total
 
     @property
@@ -295,6 +300,7 @@ class MovimientoKardex(db.Model):
     stock_nuevo = db.Column(db.Numeric(12, 2), nullable=False)
     motivo_observaciones = db.Column(db.Text, nullable=False)
     documento_soporte = db.Column(db.String(100), nullable=True)  # Nro factura, remisión, orden de envasado o acta
+    archivo_comprobante = db.Column(db.String(255), nullable=True)  # Nombre o ruta del archivo de comprobante cargado
 
     usuario = db.relationship('User', back_populates='movimientos')
     producto = db.relationship('Producto', back_populates='movimientos')

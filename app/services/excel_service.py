@@ -229,10 +229,11 @@ def generar_inventario_valorizado_excel(productos):
         else:
             # Producto a granel o insumo sin presentaciones
             stock_f = float(prod.stock_actual_total or 0)
-            costo_u = 0.0
-            subtotal_f = 0.0
-            iva_f = 0.0
-            total_f = 0.0
+            costo_u = float(prod.costo_unitario_base or 0)
+            subtotal_f = stock_f * costo_u
+            iva_f = subtotal_f * 0.19
+            total_f = subtotal_f + iva_f
+            total_subtotal_gen += subtotal_f
 
             fila_datos = [
                 (prod.codigo_referencia, regular_font, Alignment(horizontal="center")),

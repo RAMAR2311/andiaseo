@@ -98,7 +98,7 @@
             </div>
 
             <div class="card-body p-4">
-                <form method="POST" id="despachoForm">
+                <form method="POST" id="despachoForm" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <!-- Campo oculto con el ID de producto seleccionado -->
                     <input type="hidden" name="producto_id" id="hiddenProductoId" required>
@@ -173,6 +173,15 @@
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-bold small">Nro. de Remisión / Orden de Entrega</label>
                             <input type="text" name="documento_soporte" class="form-control form-control-lg" placeholder="Ej: REM-2026-089 o FAC-3420">
+                        </div>
+
+                        <!-- Botón para Cargar Comprobante / Acta de Entrega Digital -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small">
+                                <i class="fa-solid fa-paperclip text-primary me-1"></i> Adjuntar Remisión Firmada / Comprobante
+                            </label>
+                            <input type="file" name="archivo_comprobante" class="form-control form-control-lg" accept=".pdf,.png,.jpg,.jpeg,.webp">
+                            <small class="text-muted">Formatos: PDF, JPG, PNG (Acta de entrega firmada o remisión).</small>
                         </div>
 
                         <div class="col-12 col-md-6">

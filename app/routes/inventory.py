@@ -1,11 +1,14 @@
 from decimal import Decimal
 from datetime import datetime, date
+from pathlib import Path
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from app.models import db, Producto, PresentacionComercial, Categoria, Lote, MovimientoKardex
 from app.routes.auth import role_required
 from app.services.kardex_service import registrar_movimiento
 from app.services.fefo_service import sugerir_lote_fefo, validar_salida_lote
+
+basedir = Path(__file__).resolve().parent.parent.parent
 
 inventory_bp = Blueprint('inventory_bp', __name__)
 
@@ -304,14 +307,39 @@ def entrada_compra():
         producto = Producto.query.get_or_404(producto_id)
         presentacion = db.session.get(PresentacionComercial, presentacion_id) if presentacion_id else None
 
-        # Si viene costo y hay presentación, actualizar costo promedio ponderado
-        if presentacion and costo_unitario > 0:
-            stock_act = float(presentacion.stock_actual or 0)
-            costo_act = float(presentacion.costo_promedio_unitario or 0)
-            nuevo_stock = stock_act + cantidad
-            if nuevo_stock > 0:
-                costo_ponderado = ((stock_act * costo_act) + (cantidad * costo_unitario)) / nuevo_stock
-                presentacion.costo_promedio_unitario = Decimal(str(round(costo_ponderado, 2)))
+        # Actualizar costo promedio ponderado
+        if costo_unitario > 0:
+            if presentacion:
+                stock_act = float(presentacion.stock_actual or 0)
+                costo_act = float(presentacion.costo_promedio_unitario or 0)
+                nuevo_stock = stock_act + cantidad
+                if nuevo_stock > 0:
+                    costo_ponderado = ((stock_act * costo_act) + (cantidad * costo_unitario)) / nuevo_stock
+                    presentacion.costo_promedio_unitario = Decimal(str(round(costo_ponderado, 2)))
+            else:
+                # Producto a granel / unidad base directa
+                stock_act = float(producto.stock_actual_total or 0)
+                costo_act = float(producto.costo_unitario_base or 0)
+                nuevo_stock = stock_act + cantidad
+                if nuevo_stock > 0:
+                    costo_ponderado = ((stock_act * costo_act) + (cantidad * costo_unitario)) / nuevo_stock
+                    producto.costo_unitario_base = Decimal(str(round(costo_ponderado, 2)))
+                else:
+                    producto.costo_unitario_base = Decimal(str(costo_unitario))
+
+        # Manejo de Comprobante / Archivo adjunto
+        archivo_adjunto = request.files.get('archivo_comprobante')
+        nombre_archivo_guardado = None
+        if archivo_adjunto and archivo_adjunto.filename != '':
+            ext = archivo_adjunto.filename.rsplit('.', 1)[-1].lower()
+            if ext in {'pdf', 'png', 'jpg', 'jpeg', 'webp'}:
+                from werkzeug.utils import secure_filename
+                import os
+                nombre_seguro = f"COMP_ENT_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secure_filename(archivo_adjunto.filename)}"
+                upload_folder = os.path.join(basedir, 'app', 'static', 'uploads')
+                os.makedirs(upload_folder, exist_ok=True)
+                archivo_adjunto.save(os.path.join(upload_folder, nombre_seguro))
+                nombre_archivo_guardado = nombre_seguro
 
         # Buscar o crear lote
         lote = Lote.query.filter_by(numero_lote=numero_lote, producto_id=producto.id).first()
@@ -341,6 +369,7 @@ def entrada_compra():
                 presentacion_id=presentacion.id if presentacion else None,
                 lote_id=lote.id,
                 documento_soporte=factura_remision,
+                archivo_comprobante=nombre_archivo_guardado,
                 commit=True
             )
             flash(f'Entrada de mercancía procesada correctamente. Lote {lote.numero_lote} registrado en Kardex.', 'success')
@@ -379,6 +408,20 @@ def despacho():
             flash(mensaje_error, 'danger')
             return redirect(url_for('inventory_bp.despacho'))
 
+        # Manejo de Comprobante / Guía de despacho adjunta
+        archivo_adjunto = request.files.get('archivo_comprobante')
+        nombre_archivo_guardado = None
+        if archivo_adjunto and archivo_adjunto.filename != '':
+            ext = archivo_adjunto.filename.rsplit('.', 1)[-1].lower()
+            if ext in {'pdf', 'png', 'jpg', 'jpeg', 'webp'}:
+                from werkzeug.utils import secure_filename
+                import os
+                nombre_seguro = f"COMP_DESP_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secure_filename(archivo_adjunto.filename)}"
+                upload_folder = os.path.join(basedir, 'app', 'static', 'uploads')
+                os.makedirs(upload_folder, exist_ok=True)
+                archivo_adjunto.save(os.path.join(upload_folder, nombre_seguro))
+                nombre_archivo_guardado = nombre_seguro
+
         try:
             registrar_movimiento(
                 usuario_id=current_user.id,
@@ -389,6 +432,7 @@ def despacho():
                 presentacion_id=presentacion_id,
                 lote_id=lote_id,
                 documento_soporte=documento,
+                archivo_comprobante=nombre_archivo_guardado,
                 commit=True
             )
             flash(f'Despacho de {cantidad} unidades del Lote {lote.numero_lote} registrado exitosamente.', 'success')

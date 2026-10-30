@@ -12,8 +12,11 @@
         <a href="{{ url_for('reportes_bp.exportar_valorizado') }}" class="btn btn-outline-success shadow-sm d-inline-flex align-items-center gap-2">
             <i class="fa-solid fa-file-excel"></i> Exportar Valorizado (.xlsx)
         </a>
-        <a href="{{ url_for('produccion_bp.envasado') }}" class="btn btn-brand shadow-sm d-inline-flex align-items-center gap-2">
-            <i class="fa-solid fa-prescription-bottle"></i> Nuevo Envasado
+        <a href="{{ url_for('inventory_bp.entrada_compra') }}" class="btn btn-primary shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-cart-flatbed"></i> Nueva Compra
+        </a>
+        <a href="{{ url_for('inventory_bp.despacho') }}" class="btn btn-success shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-truck-ramp-box"></i> Nuevo Despacho
         </a>
     </div>
 </div>
@@ -199,14 +202,14 @@
             </div>
             <div class="card-body p-3">
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('produccion_bp.envasado') }}" class="btn btn-light border text-start p-3 d-flex align-items-center justify-content-between rounded-3">
+                    <a href="{{ url_for('inventory_bp.entrada_compra') }}" class="btn btn-light border text-start p-3 d-flex align-items-center justify-content-between rounded-3">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="p-2 bg-teal bg-opacity-10 rounded text-teal">
-                                <i class="fa-solid fa-prescription-bottle fa-lg text-primary"></i>
+                            <div class="p-2 bg-primary bg-opacity-10 rounded text-primary">
+                                <i class="fa-solid fa-cart-flatbed fa-lg text-primary"></i>
                             </div>
                             <div>
-                                <div class="fw-bold text-dark">Fraccionamiento / Envasado</div>
-                                <small class="text-muted">Transformar tanque de granel + galones vacíos a producto terminado</small>
+                                <div class="fw-bold text-dark">Entrada por Factura de Compra</div>
+                                <small class="text-muted">Recepción de mercancía empacada de proveedores</small>
                             </div>
                         </div>
                         <i class="fa-solid fa-chevron-right text-muted"></i>
@@ -231,8 +234,8 @@
                                 <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
                             </div>
                             <div>
-                                <div class="fw-bold text-dark">Registrar Merma o Derrame</div>
-                                <small class="text-muted">Pérdida por rotura, evaporación de solventes o daño químico</small>
+                                <div class="fw-bold text-dark">Registrar Avería o Baja de Bodega</div>
+                                <small class="text-muted">Pérdida por rotura, daño de envase o vencimiento</small>
                             </div>
                         </div>
                         <i class="fa-solid fa-chevron-right text-muted"></i>

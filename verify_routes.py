@@ -30,8 +30,9 @@ def test_routes():
         ('/inventario/despacho', 'Salida por Despacho'),
         ('/lotes/', 'Monitor FEFO de Lotes'),
         ('/lotes/nuevo', 'Nuevo Lote'),
-        ('/produccion/envasado', 'Fraccionamiento y Envasado'),
-        ('/produccion/mermas', 'Control de Mermas'),
+        ('/terceros/', 'Gestión de Terceros'),
+        ('/facturacion/', 'Módulo de Compras y Ventas'),
+        ('/produccion/mermas', 'Bajas y Averías de Bodega'),
         ('/reportes/kardex', 'Kardex Histórico'),
         ('/reportes/valorizado', 'Inventario Valorizado'),
         ('/auth/usuarios', 'Gestión de Usuarios')

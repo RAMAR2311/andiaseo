@@ -181,3 +181,4 @@ def detalle_factura(tipo, documento):
         tipo=tipo_norm,
         documento=documento
     )
+

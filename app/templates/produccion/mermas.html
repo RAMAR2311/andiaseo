@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Registro de Mermas y Derrames Químicos{% endblock %}
+{% block title %}Registro de Bajas y Averías de Bodega{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -12,8 +12,8 @@
                         <i class="fa-solid fa-triangle-exclamation fa-2x"></i>
                     </div>
                     <div>
-                        <h4 class="fw-bold text-dark mb-0">Registro y Control de Mermas Químicas</h4>
-                        <p class="text-muted small mb-0">Justificación y descuento formal por rotura, evaporación, derrames o vencimientos.</p>
+                        <h4 class="fw-bold text-dark mb-0">Registro de Bajas y Averías de Bodega</h4>
+                        <p class="text-muted small mb-0">Descuento justificado de productos terminados por rotura, daño en transporte, defecto o vencimiento.</p>
                     </div>
                 </div>
             </div>
@@ -24,9 +24,9 @@
 
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-semibold small">Producto Químico / Insumo <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold small">Producto Comercial Afectado <span class="text-danger">*</span></label>
                             <select name="producto_id" id="prodSelectMerma" class="form-select" required>
-                                <option value="">Seleccione el producto afectado...</option>
+                                <option value="">Seleccione el producto...</option>
                                 {% for p in productos %}
                                     <option value="{{ p.id }}">{{ p.codigo_referencia }} - {{ p.nombre }}</option>
                                 {% endfor %}
@@ -36,7 +36,7 @@
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-semibold small">Presentación Comercial (Opcional)</label>
                             <select name="presentacion_id" id="presSelectMerma" class="form-select">
-                                <option value="">A Granel / Unidad Base Directa</option>
+                                <option value="">Presentación estándar / Unidad base</option>
                             </select>
                         </div>
 
@@ -48,12 +48,12 @@
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-semibold small">Cantidad Perdida / Merma <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold small">Cantidad Averiada / de Baja <span class="text-danger">*</span></label>
                             <input type="number" step="0.01" min="0.01" name="cantidad" class="form-control form-control-lg" placeholder="0.00" required>
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-semibold small">Tipo / Causal de Merma <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold small">Causal de Avería / Baja <span class="text-danger">*</span></label>
                             <select name="tipo_merma" class="form-select" required>
                                 <option value="">Seleccione la causa operativa...</option>
                                 {% for mot in motivos_merma %}
@@ -63,25 +63,25 @@
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-semibold small">Nro. de Acta o Informe de Incidente</label>
-                            <input type="text" name="acta_soporte" class="form-control" value="ACTA-MERMA-{{ ahora.strftime('%Y%m%d%H%M') }}">
+                            <label class="form-label fw-semibold small">Nro. de Acta o Reporte de Avería</label>
+                            <input type="text" name="acta_soporte" class="form-control" value="ACTA-BAJA-{{ ahora.strftime('%Y%m%d%H%M') }}">
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label fw-semibold small">Detalle del Incidente y Medidas Correctivas <span class="text-danger">*</span></label>
-                            <textarea name="detalle" class="form-control" rows="3" placeholder="Describa cómo ocurrió el incidente, área de la bodega y disposición final de los residuos..." required></textarea>
+                            <label class="form-label fw-semibold small">Detalle del Incidente y Disposición <span class="text-danger">*</span></label>
+                            <textarea name="detalle" class="form-control" rows="3" placeholder="Describa cómo ocurrió el daño o avería, ubicación en bodega y disposición del producto..." required></textarea>
                         </div>
                     </div>
 
                     <div class="alert alert-danger bg-opacity-10 text-danger border-danger mt-4 mb-3 d-flex align-items-center gap-2">
                         <i class="fa-solid fa-triangle-exclamation fs-4"></i>
-                        <small>Esta acción descontará las unidades o litros indicados del stock físico activo y quedará registrada en el Kardex con auditoría del usuario actual.</small>
+                        <small>Esta acción descontará las unidades físicas indicadas del stock disponible y registrará la baja en el Kardex para auditoría y control de pérdidas.</small>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2">
                         <a href="{{ url_for('dashboard_bp.index') }}" class="btn btn-outline-secondary">Cancelar</a>
                         <button type="submit" class="btn btn-danger px-4">
-                            <i class="fa-solid fa-floppy-disk me-1"></i> Asentar Merma en Kardex
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Asentar Baja / Avería en Kardex
                         </button>
                     </div>
                 </form>

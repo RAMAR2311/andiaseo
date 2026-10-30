@@ -14,13 +14,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Inicialización de DataTables con traducción al español
     if (typeof $.fn.DataTable !== 'undefined') {
-        $('.datatable-custom').DataTable({
-            language: {
-                url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-            },
-            responsive: true,
-            pageLength: 25,
-            order: []
+        // Desactivar alertas modales invasivas de DataTables y registrar en consola
+        $.fn.dataTable.ext.errMode = 'none';
+
+        $('.datatable-custom').each(function () {
+            const table = $(this);
+            // Si la tabla solo contiene la fila de "No se encontraron registros" o está vacía, no inicializar DataTables
+            const hasDataRows = table.find('tbody tr').length > 0 && !table.find('tbody tr td[colspan]').length;
+            if (hasDataRows) {
+                table.DataTable({
+                    language: {
+                        url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                    },
+                    responsive: true,
+                    pageLength: 25,
+                    order: []
+                });
+            }
         });
     }
 

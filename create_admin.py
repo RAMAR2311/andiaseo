@@ -34,3 +34,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     crear_o_actualizar_admin(args.user, args.password, args.nombre)
+

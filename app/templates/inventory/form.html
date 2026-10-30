@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-0">
+                <h4 class="fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-flask-vial text-teal me-2"></i>
+                    {% if producto %}Editar Químico / Insumo: {{ producto.nombre }}{% else %}Registrar Nuevo Químico o Insumo{% endif %}
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-semibold small">Código de Referencia <span class="text-danger">*</span></label>
+                            <input type="text" name="codigo_referencia" class="form-control" placeholder="Ej: QUI-CLO-001" value="{{ producto.codigo_referencia if producto else '' }}" required>
+                            <small class="text-muted">Identificador único de bodega</small>
+                        </div>
+
+                        <div class="col-12 col-md-8">
+                            <label class="form-label fw-semibold small">Nombre del Producto / Químico <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre" class="form-control" placeholder="Ej: Hipoclorito de Sodio al 15%" value="{{ producto.nombre if producto else '' }}" required>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-semibold small">Categoría <span class="text-danger">*</span></label>
+                            <select name="categoria_id" class="form-select" required>
+                                <option value="">Seleccione categoría...</option>
+                                {% for c in categorias %}
+                                    <option value="{{ c.id }}" {% if producto and producto.categoria_id == c.id %}selected{% endif %}>{{ c.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-semibold small">Tipo de Producto <span class="text-danger">*</span></label>
+                            <select name="tipo_producto" class="form-select" required>
+                                <option value="quimico_liquido" {% if producto and producto.tipo_producto == 'quimico_liquido' %}selected{% endif %}>Químico Líquido</option>
+                                <option value="quimico_polvo" {% if producto and producto.tipo_producto == 'quimico_polvo' %}selected{% endif %}>Químico en Polvo</option>
+                                <option value="insumo_empaque" {% if producto and producto.tipo_producto == 'insumo_empaque' %}selected{% endif %}>Insumo de Empaque (Botellas/Tapas)</option>
+                                <option value="accesorio_herramienta" {% if producto and producto.tipo_producto == 'accesorio_herramienta' %}selected{% endif %}>Accesorio o Herramienta</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-semibold small">Unidad de Medida Base <span class="text-danger">*</span></label>
+                            <select name="unidad_base" class="form-select" required>
+                                <option value="litros" {% if producto and producto.unidad_base == 'litros' %}selected{% endif %}>Litros (L)</option>
+                                <option value="kilogramos" {% if producto and producto.unidad_base == 'kilogramos' %}selected{% endif %}>Kilogramos (Kg)</option>
+                                <option value="unidades" {% if producto and producto.unidad_base == 'unidades' %}selected{% endif %}>Unidades (Und)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Stock Mínimo de Alerta (Punto de Reorden)</label>
+                            <input type="number" step="0.01" min="0" name="stock_minimo_alerta" class="form-control" value="{{ producto.stock_minimo_alerta if producto else '0.00' }}">
+                            <small class="text-muted">Generará alerta en dashboard si el total es menor a este valor.</small>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Descripción o Especificaciones Técnicas</label>
+                            <textarea name="descripcion" class="form-control" rows="3" placeholder="Composición química, precauciones de manipulación o usos recomendados...">{{ producto.descripcion if producto else '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{{ url_for('inventory_bp.list_productos') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-brand px-4">
+                            <i class="fa-solid fa-save me-1"></i> Guardar Producto
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

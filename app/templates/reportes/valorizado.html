@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventario Valorizado General{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold text-dark mb-1">Balance de Inventario Valorizado</h3>
+        <p class="text-muted small mb-0">Valorización del stock físico basada en costo promedio ponderado de compra.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('reportes_bp.exportar_valorizado') }}" class="btn btn-outline-success shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-file-excel"></i> Descargar Excel Oficial (.xlsx)
+        </a>
+    </div>
+</div>
+
+<!-- Tarjeta de Gran Total Valorizado -->
+<div class="card border-0 shadow-sm mb-4 bg-teal bg-opacity-10 border-start border-4 border-teal">
+    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+        <div>
+            <span class="text-teal text-uppercase fw-bold small">Valorización Total Consolidada</span>
+            <h2 class="fw-bold text-dark mb-0">{{ total_valor|currency }}</h2>
+        </div>
+        <div class="p-3 bg-white rounded-circle shadow-sm text-teal">
+            <i class="fa-solid fa-coins fa-2x"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla Detallada -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 datatable-custom">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-3">Código Ref.</th>
+                        <th>Categoría</th>
+                        <th>Producto / Químico</th>
+                        <th>Presentación Comercial</th>
+                        <th class="text-end">Stock Físico</th>
+                        <th class="text-end">Costo Promedio Unitario</th>
+                        <th class="text-end pe-3">Valorización Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                        {% if p.presentaciones %}
+                            {% for pres in p.presentaciones %}
+                            <tr>
+                                <td class="ps-3 font-monospace text-muted">{{ p.codigo_referencia }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ p.categoria.nombre }}</span></td>
+                                <td class="fw-semibold text-dark">{{ p.nombre }}</td>
+                                <td>{{ pres.nombre_presentacion }}</td>
+                                <td class="text-end">
+                                    <span class="fw-bold text-teal">{{ pres.stock_actual|number(0) }}</span> und
+                                </td>
+                                <td class="text-end">{{ pres.costo_promedio_unitario|currency }}</td>
+                                <td class="text-end pe-3 fw-bold text-dark">{{ pres.valor_inventario|currency }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td class="ps-3 font-monospace text-muted">{{ p.codigo_referencia }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ p.categoria.nombre }}</span></td>
+                                <td class="fw-semibold text-dark">{{ p.nombre }}</td>
+                                <td class="text-muted fst-italic">Granel Base ({{ p.unidad_legible }})</td>
+                                <td class="text-end">
+                                    <span class="fw-bold text-teal">{{ p.stock_actual_total|number }}</span> {{ p.unidad_legible }}
+                                </td>
+                                <td class="text-end">$ 0.00</td>
+                                <td class="text-end pe-3 fw-bold text-dark">$ 0.00</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

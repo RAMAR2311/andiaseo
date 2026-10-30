@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AndiaSeo{% endblock %} - Gestión de Inventario Químico</title>
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
+    
+    <!-- Google Fonts: Inter (Principal) & Montserrat (Títulos/Headings) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- FontAwesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    
+    <!-- Tom Select (Búsqueda Inteligente y Escáner de Código de Barras) -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<div class="app-wrapper">
+    <!-- Sidebar Navegación -->
+    <aside class="app-sidebar">
+        <div class="sidebar-header d-flex align-items-center justify-content-center">
+            <a href="{{ url_for('dashboard_bp.index') }}" class="d-flex align-items-center text-decoration-none">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="AndiaSeo Logo" style="height: 48px; max-width: 100%; object-fit: contain;">
+            </a>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-section-title">Principal</div>
+            <a href="{{ url_for('dashboard_bp.index') }}" class="nav-item-link {% if request.endpoint == 'dashboard_bp.index' %}active{% endif %}">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Panel de Control</span>
+            </a>
+
+            <div class="nav-section-title">Gestión de Stock</div>
+            <a href="{{ url_for('inventory_bp.list_productos') }}" class="nav-item-link {% if request.endpoint.startswith('inventory_bp.list') or request.endpoint.startswith('inventory_bp.form') %}active{% endif %}">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>Catálogo Químico</span>
+            </a>
+            <a href="{{ url_for('inventory_bp.categorias') }}" class="nav-item-link {% if request.endpoint == 'inventory_bp.categorias' %}active{% endif %}">
+                <i class="fa-solid fa-tags"></i>
+                <span>Categorías</span>
+            </a>
+            <a href="{{ url_for('lotes_bp.list_lotes') }}" class="nav-item-link {% if request.endpoint.startswith('lotes_bp.') %}active{% endif %}">
+                <i class="fa-solid fa-traffic-light"></i>
+                <span>Monitor FEFO / Lotes</span>
+            </a>
+
+            <div class="nav-section-title">Operaciones con IA</div>
+            <a href="{{ url_for('documentos_ai_bp.subir_documento', tipo='compra') }}" class="nav-item-link {% if request.endpoint == 'documentos_ai_bp.subir_documento' and request.args.get('tipo') != 'venta' %}active{% endif %}">
+                <i class="fa-solid fa-file-arrow-up text-info"></i>
+                <span>Subir Factura Compra (IA)</span>
+            </a>
+            <a href="{{ url_for('documentos_ai_bp.subir_documento', tipo='venta') }}" class="nav-item-link {% if request.endpoint == 'documentos_ai_bp.subir_documento' and request.args.get('tipo') == 'venta' %}active{% endif %}">
+                <i class="fa-solid fa-receipt text-warning"></i>
+                <span>Despachar por Factura (IA)</span>
+            </a>
+
+            <div class="nav-section-title">Operaciones de Bodega</div>
+            <a href="{{ url_for('produccion_bp.envasado') }}" class="nav-item-link {% if request.endpoint == 'produccion_bp.envasado' %}active{% endif %}">
+                <i class="fa-solid fa-prescription-bottle"></i>
+                <span>Fraccionamiento / Envasado</span>
+            </a>
+            <a href="{{ url_for('produccion_bp.mermas') }}" class="nav-item-link {% if request.endpoint == 'produccion_bp.mermas' %}active{% endif %}">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Control de Mermas</span>
+            </a>
+            <a href="{{ url_for('inventory_bp.entrada_compra') }}" class="nav-item-link {% if request.endpoint == 'inventory_bp.entrada_compra' %}active{% endif %}">
+                <i class="fa-solid fa-dolly"></i>
+                <span>Entrada por Compra</span>
+            </a>
+            <a href="{{ url_for('inventory_bp.despacho') }}" class="nav-item-link {% if request.endpoint == 'inventory_bp.despacho' %}active{% endif %}">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+                <span>Salida por Despacho</span>
+            </a>
+
+            <div class="nav-section-title">Auditoría y Reportes</div>
+            <a href="{{ url_for('reportes_bp.kardex') }}" class="nav-item-link {% if request.endpoint == 'reportes_bp.kardex' %}active{% endif %}">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Kardex Histórico</span>
+            </a>
+            <a href="{{ url_for('reportes_bp.inventario_valorizado') }}" class="nav-item-link {% if request.endpoint == 'reportes_bp.inventario_valorizado' %}active{% endif %}">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+                <span>Inventario Valorizado</span>
+            </a>
+
+            {% if current_user.rol == 'admin' %}
+            <div class="nav-section-title">Administración</div>
+            <a href="{{ url_for('auth_bp.usuarios') }}" class="nav-item-link {% if request.endpoint == 'auth_bp.usuarios' %}active{% endif %}">
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Usuarios y Roles</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-badge">
+                <div class="user-avatar">
+                    {{ current_user.nombre[:1].upper() }}
+                </div>
+                <div class="flex-grow-1 overflow-hidden">
+                    <div class="text-white fw-bold text-truncate text-capitalize" style="font-size: 0.88rem;">{{ current_user.nombre }}</div>
+                    <div class="badge bg-secondary text-uppercase" style="font-size: 0.65rem;">{{ current_user.rol }}</div>
+                </div>
+                <a href="{{ url_for('auth_bp.logout') }}" class="text-danger" title="Cerrar sesión" data-bs-toggle="tooltip">
+                    <i class="fa-solid fa-power-off"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="app-main">
+        <!-- Topbar Superior -->
+        <header class="app-topbar">
+            <button class="btn btn-sm btn-outline-secondary d-lg-none" id="sidebarToggle">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div class="d-none d-md-flex align-items-center gap-2 text-muted">
+                <i class="fa-solid fa-shield-halved text-success"></i>
+                <small class="fw-semibold">Sistema de Control Sanitario y Lotes FEFO</small>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('produccion_bp.envasado') }}" class="btn btn-sm btn-outline-primary d-none d-sm-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-plus-circle"></i> Envasar
+                </a>
+                <a href="{{ url_for('inventory_bp.despacho') }}" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1">
+                    <i class="fa-solid fa-truck-arrow-right"></i> Despachar
+                </a>
+            </div>
+        </header>
+
+        <!-- Mensajes Flash -->
+        <div class="app-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-3">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if category == 'success' %}
+                                        <i class="fa-solid fa-circle-check fs-5"></i>
+                                    {% elif category == 'danger' %}
+                                        <i class="fa-solid fa-triangle-exclamation fs-5"></i>
+                                    {% elif category == 'warning' %}
+                                        <i class="fa-solid fa-exclamation-circle fs-5"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-circle-info fs-5"></i>
+                                    {% endif %}
+                                    <span>{{ message }}</span>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+{% else %}
+    <!-- Vista pública (Login) -->
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container mt-4">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block unauth_content %}{% endblock %}
+    </main>
+{% endif %}
+
+<!-- jQuery, Bootstrap Bundle, DataTables, SweetAlert2 -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

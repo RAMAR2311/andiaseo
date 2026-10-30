@@ -1,0 +1,22 @@
+# Entorno virtual y Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+env/
+venv/
+
+# Base de datos local SQLite y archivos temporales
+*.db
+*.sqlite3
+andiaseo_inventory.db
+
+# Logs y SO
+*.log
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/

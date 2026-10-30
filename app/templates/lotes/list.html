@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Monitor FEFO y Lotes Sanitarios{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold text-dark mb-1">Control de Lotes y Semáforo Sanitario (FEFO)</h3>
+        <p class="text-muted small mb-0">Trazabilidad de vencimientos químicos bajo la regla First Expired, First Out.</p>
+    </div>
+    <a href="{{ url_for('lotes_bp.nuevo_lote') }}" class="btn btn-brand">
+        <i class="fa-solid fa-plus-circle me-1"></i> Registrar Lote
+    </a>
+</div>
+
+<!-- Resumen del Semáforo FEFO -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('lotes_bp.list_lotes', semaforo='verde') }}" class="card text-decoration-none border-0 shadow-sm p-3 border-start border-4 border-success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-bold">ÓPTIMOS (&gt; 6 meses)</span>
+                    <h3 class="fw-bold text-success mb-0">{{ resumen.optimos }}</h3>
+                </div>
+                <div class="kpi-icon-box bg-success bg-opacity-10 text-success"><i class="fa-solid fa-shield-check"></i></div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('lotes_bp.list_lotes', semaforo='amarillo') }}" class="card text-decoration-none border-0 shadow-sm p-3 border-start border-4 border-warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-bold">ROTACIÓN (1 a 6 meses)</span>
+                    <h3 class="fw-bold text-warning mb-0">{{ resumen.rotacion_180d }}</h3>
+                </div>
+                <div class="kpi-icon-box bg-warning bg-opacity-10 text-warning"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('lotes_bp.list_lotes', semaforo='rojo') }}" class="card text-decoration-none border-0 shadow-sm p-3 border-start border-4 border-danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-bold">CRÍTICOS (&le; 30 días)</span>
+                    <h3 class="fw-bold text-danger mb-0">{{ resumen.criticos_30d }}</h3>
+                </div>
+                <div class="kpi-icon-box bg-danger bg-opacity-10 text-danger"><i class="fa-solid fa-radiation"></i></div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('lotes_bp.list_lotes', semaforo='vencido') }}" class="card text-decoration-none border-0 shadow-sm p-3 border-start border-4 border-dark">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-bold">VENCIDOS / BLOQUEADOS</span>
+                    <h3 class="fw-bold text-dark mb-0">{{ resumen.vencidos }}</h3>
+                </div>
+                <div class="kpi-icon-box bg-dark bg-opacity-10 text-dark"><i class="fa-solid fa-ban"></i></div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Filtros Rápidos -->
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="{{ url_for('lotes_bp.list_lotes') }}" class="btn btn-sm {% if not filtros.semaforo and not filtros.estado %}btn-brand{% else %}btn-outline-secondary{% endif %}">
+        Todos los Lotes
+    </a>
+    <a href="{{ url_for('lotes_bp.list_lotes', semaforo='verde') }}" class="btn btn-sm {% if filtros.semaforo == 'verde' %}btn-success{% else %}btn-outline-success{% endif %}">
+        🟢 Verdes (> 180 días)
+    </a>
+    <a href="{{ url_for('lotes_bp.list_lotes', semaforo='amarillo') }}" class="btn btn-sm {% if filtros.semaforo == 'amarillo' %}btn-warning text-dark{% else %}btn-outline-warning text-dark{% endif %}">
+        🟡 Amarillos (30 - 180 días)
+    </a>
+    <a href="{{ url_for('lotes_bp.list_lotes', semaforo='rojo') }}" class="btn btn-sm {% if filtros.semaforo == 'rojo' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+        🔴 Rojos (&le; 30 días)
+    </a>
+    <a href="{{ url_for('lotes_bp.list_lotes', semaforo='cuarentena') }}" class="btn btn-sm {% if filtros.semaforo == 'cuarentena' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+        🔒 En Cuarentena
+    </a>
+</div>
+
+<!-- Tabla de Lotes -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 datatable-custom">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-3">Número Lote</th>
+                        <th>Producto / Químico</th>
+                        <th>Presentación</th>
+                        <th>Registro Sanitario</th>
+                        <th>Producción</th>
+                        <th>Vencimiento</th>
+                        <th>Existencia Actual</th>
+                        <th>Semáforo FEFO</th>
+                        <th class="text-end pe-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in lotes %}
+                    {% set badge = l.semaforo_badge %}
+                    <tr>
+                        <td class="ps-3 fw-bold font-monospace text-teal">{{ l.numero_lote }}</td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ l.producto.nombre }}</div>
+                            <small class="text-muted">{{ l.producto.codigo_referencia }}</small>
+                        </td>
+                        <td>
+                            {% if l.presentacion %}
+                                <span class="badge bg-light text-dark border">{{ l.presentacion.nombre_presentacion }}</span>
+                            {% else %}
+                                <span class="text-muted small">Granel Base ({{ l.producto.unidad_legible }})</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ l.registro_sanitario or 'No aplica' }}</small>
+                        </td>
+                        <td class="text-muted small">{{ l.fecha_produccion|fecha }}</td>
+                        <td class="fw-bold">{{ l.fecha_vencimiento|fecha }}</td>
+                        <td>
+                            <span class="fs-6 fw-bold">{{ l.cantidad_actual|number }}</span>
+                            <small class="text-muted">/ {{ l.cantidad_inicial|number }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ badge.color }} d-inline-flex align-items-center gap-1" title="{{ badge.alerta }}">
+                                <i class="fa-solid {{ badge.icono }}"></i> {{ badge.texto }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-3">
+                            {% if current_user.rol in ('admin', 'auditor') %}
+                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalEstadoLote{{ l.id }}" title="Inspección de Calidad / Cuarentena">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- Modal Inspección Sanitaria / Cuarentena -->
+                    <div class="modal fade" id="modalEstadoLote{{ l.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content border-0 rounded-4">
+                                <div class="modal-header bg-light">
+                                    <h5 class="modal-title fw-bold">Gestión de Calidad: Lote {{ l.numero_lote }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('lotes_bp.cambiar_estado', id=l.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <div class="modal-body p-4">
+                                        <p class="text-muted small">Producto: <strong>{{ l.producto.nombre }}</strong> &bull; Vencimiento: {{ l.fecha_vencimiento|fecha }}</p>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold small">Cambiar Estado Sanitario</label>
+                                            <select name="nuevo_estado" class="form-select" required>
+                                                <option value="ACTIVO" {% if l.estado == 'ACTIVO' %}selected{% endif %}>ACTIVO (Disponible para consumo y despacho)</option>
+                                                <option value="CUARENTENA" {% if l.estado == 'CUARENTENA' %}selected{% endif %}>CUARENTENA (Bloqueado por análisis o sospecha de contaminación)</option>
+                                                <option value="VENCIDO" {% if l.estado == 'VENCIDO' %}selected{% endif %}>VENCIDO (Dar de baja / Salida bloqueada)</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold small">Motivo / Acta de Inspección</label>
+                                            <textarea name="motivo" class="form-control" rows="2" placeholder="Justificación técnica de calidad..." required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-brand">Actualizar Estado</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">No se encontraron lotes con los criterios seleccionados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

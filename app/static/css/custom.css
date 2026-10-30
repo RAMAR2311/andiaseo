@@ -1,0 +1,510 @@
+/* ==========================================================================
+   IDENTIDAD VISUAL CORPORATIVA - ANDIASEO LTDA.
+   ========================================================================== */
+
+:root {
+    /* Paleta Oficial ANDIASEO LTDA. */
+    --color-primary: #1450A8;          /* Azul corporativo principal */
+    --color-primary-hover: #0f3f85;    /* Tono oscuro para hover/focus */
+    --color-primary-light: #e8f0fe;    /* Azul suave para fondos activos */
+    --color-gold: #FFC900;             /* Amarillo dorado corporativo */
+    --color-gold-hover: #e0b000;
+    --color-cyan: #079BDF;             /* Azul celeste complementario */
+    --color-cyan-light: #e0f4fc;
+    --color-white: #FFFFFF;            /* Blanco */
+    --color-bg: #F4F6F9;               /* Gris claro para fondos de aplicación */
+    --color-text-main: #263445;        /* Gris oscuro para textos principales */
+    --color-text-muted: #5c6f84;       /* Gris medio para textos secundarios */
+    --color-success: #16A36A;          /* Verde para estados exitosos */
+    --color-success-light: #d4f4e6;
+    --color-danger: #DC3545;           /* Rojo para errores y alertas críticas */
+    --color-danger-light: #fde8e9;
+    --color-border: #E2E8F0;           /* Bordes sutiles y limpios */
+
+    /* Tipografía Corporativa */
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Montserrat', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Sombras sutiles SaaS Empresarial */
+    --shadow-sm: 0 1px 2px 0 rgba(38, 52, 69, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(38, 52, 69, 0.08), 0 2px 4px -2px rgba(38, 52, 69, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(38, 52, 69, 0.1), 0 4px 6px -4px rgba(38, 52, 69, 0.05);
+}
+
+/* Reset y Base */
+body {
+    background-color: var(--color-bg);
+    font-family: var(--font-primary);
+    color: var(--color-text-main);
+    min-height: 100vh;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Títulos y Jerarquía Tipográfica */
+h1, h2, h3, h4, h5, h6, .card-title, .modal-title {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-text-main);
+    letter-spacing: -0.01em;
+}
+
+/* Layout Principal */
+.app-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* --------------------------------------------------------------------------
+   BARRA LATERAL (SIDEBAR) - AZUL CORPORATIVO #1450A8
+   -------------------------------------------------------------------------- */
+.app-sidebar {
+    width: 265px;
+    background-color: var(--color-primary);
+    color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    box-shadow: 2px 0 8px rgba(20, 80, 168, 0.12);
+}
+
+.sidebar-header {
+    padding: 1.5rem 1.25rem;
+    background-color: #FFFFFF;
+    border-bottom: 3px solid var(--color-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-header img {
+    height: 48px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.sidebar-nav {
+    padding: 1.25rem 0.85rem;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.nav-section-title {
+    font-family: var(--font-heading);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+    padding: 1rem 0.75rem 0.35rem;
+    letter-spacing: 0.8px;
+}
+
+.nav-item-link {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0.95rem;
+    color: rgba(255, 255, 255, 0.88);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.92rem;
+    margin-bottom: 0.25rem;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.nav-item-link i {
+    font-size: 1.05rem;
+    width: 22px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.nav-item-link:hover {
+    background-color: var(--color-primary-hover);
+    color: #FFFFFF;
+    transform: translateX(3px);
+}
+
+/* Sección Activa: Tono azul diferenciado con acento Amarillo Dorado */
+.nav-item-link.active {
+    background-color: #0b3777;
+    color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: inset 4px 0 0 var(--color-gold);
+}
+
+.nav-item-link.active i {
+    color: var(--color-gold);
+}
+
+.sidebar-footer {
+    padding: 1rem 1.15rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    background-color: rgba(0, 0, 0, 0.15);
+}
+
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--color-gold);
+    color: var(--color-text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-family: var(--font-heading);
+}
+
+/* --------------------------------------------------------------------------
+   BARRA SUPERIOR (TOPBAR) - FONDO BLANCO Y SEPARACIÓN SUTIL
+   -------------------------------------------------------------------------- */
+.app-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.app-topbar {
+    height: 64px;
+    background-color: var(--color-white);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 99;
+    box-shadow: var(--shadow-sm);
+}
+
+.app-content {
+    padding: 1.75rem 2rem;
+    flex-grow: 1;
+}
+
+/* --------------------------------------------------------------------------
+   BOTONES CORPORATIVOS
+   -------------------------------------------------------------------------- */
+/* Botón Principal: Azul Corporativo #1450A8 */
+.btn-brand, .btn-primary {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: var(--color-white) !important;
+    font-weight: 600;
+    padding: 0.55rem 1.15rem;
+    border-radius: 7px;
+    transition: all 0.2s ease;
+}
+
+.btn-brand:hover, .btn-primary:hover, .btn-brand:focus, .btn-primary:focus {
+    background-color: var(--color-primary-hover) !important;
+    border-color: var(--color-primary-hover) !important;
+    color: var(--color-white) !important;
+    box-shadow: 0 4px 10px rgba(20, 80, 168, 0.25);
+}
+
+/* Botón Secundario / Outline: Fondo blanco, texto azul y borde discreto */
+.btn-outline-brand, .btn-outline-primary {
+    background-color: var(--color-white) !important;
+    border: 1px solid var(--color-primary) !important;
+    color: var(--color-primary) !important;
+    font-weight: 600;
+    border-radius: 7px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-brand:hover, .btn-outline-primary:hover {
+    background-color: var(--color-primary-light) !important;
+    color: var(--color-primary-hover) !important;
+}
+
+/* Acciones Destacadas: Amarillo Dorado con texto oscuro */
+.btn-gold, .btn-warning {
+    background-color: var(--color-gold) !important;
+    border-color: var(--color-gold) !important;
+    color: var(--color-text-main) !important;
+    font-weight: 700;
+    border-radius: 7px;
+    transition: all 0.2s ease;
+}
+
+.btn-gold:hover, .btn-warning:hover {
+    background-color: var(--color-gold-hover) !important;
+    border-color: var(--color-gold-hover) !important;
+    color: var(--color-text-main) !important;
+    box-shadow: 0 4px 10px rgba(255, 201, 0, 0.35);
+}
+
+/* Acciones Exitosas / Exportación */
+.btn-success, .btn-outline-success {
+    font-weight: 600;
+    border-radius: 7px;
+}
+.btn-success {
+    background-color: var(--color-success) !important;
+    border-color: var(--color-success) !important;
+}
+.btn-success:hover {
+    background-color: #128254 !important;
+    border-color: #128254 !important;
+}
+.btn-outline-success {
+    color: var(--color-success) !important;
+    border-color: var(--color-success) !important;
+    background-color: #ffffff !important;
+}
+.btn-outline-success:hover {
+    background-color: var(--color-success-light) !important;
+    color: #0f6c46 !important;
+}
+
+/* Botones Peligro / Rojo */
+.btn-danger {
+    background-color: var(--color-danger) !important;
+    border-color: var(--color-danger) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    border-radius: 7px;
+}
+.btn-danger:hover {
+    background-color: #bd2130 !important;
+    border-color: #b21f2d !important;
+}
+
+/* --------------------------------------------------------------------------
+   TARJETAS E INDICADORES (CARDS & KPIS)
+   -------------------------------------------------------------------------- */
+.card {
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+    background: var(--color-white);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.card-header {
+    background-color: var(--color-white);
+    border-bottom: 1px solid var(--color-border);
+    font-family: var(--font-heading);
+    font-weight: 600;
+}
+
+.card-kpi {
+    border-left: 4px solid var(--color-primary);
+}
+
+.card-kpi.kpi-info { 
+    border-left-color: var(--color-primary); 
+}
+.card-kpi.kpi-warning { 
+    border-left-color: var(--color-gold); 
+}
+.card-kpi.kpi-danger { 
+    border-left-color: var(--color-danger); 
+}
+.card-kpi.kpi-success { 
+    border-left-color: var(--color-success); 
+}
+
+.kpi-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+}
+
+/* --------------------------------------------------------------------------
+   TABLAS Y FORMULARIOS
+   -------------------------------------------------------------------------- */
+.table {
+    color: var(--color-text-main);
+}
+
+.table th {
+    background-color: #F8FAFC !important;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: #334155;
+    border-bottom: 2px solid var(--color-border);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.85rem 0.75rem;
+}
+
+.table td {
+    padding: 0.85rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #F1F5F9;
+}
+
+/* Formularios */
+.form-control, .form-select {
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.95rem;
+    color: var(--color-text-main);
+    background-color: var(--color-white);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(20, 80, 168, 0.15);
+    outline: none;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--color-text-main);
+    font-size: 0.88rem;
+    margin-bottom: 0.4rem;
+}
+
+/* --------------------------------------------------------------------------
+   BADGES Y SEMÁFOROS FEFO
+   -------------------------------------------------------------------------- */
+.badge {
+    font-family: var(--font-primary);
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.38rem 0.65rem;
+}
+
+.badge-soft-success, .badge.bg-success {
+    background-color: var(--color-success-light) !important;
+    color: #0f6c46 !important;
+    border: 1px solid rgba(22, 163, 106, 0.2);
+}
+
+.badge-soft-warning, .badge.bg-warning {
+    background-color: #fff9db !important;
+    color: #8c6b00 !important;
+    border: 1px solid rgba(255, 201, 0, 0.3);
+}
+
+.badge-soft-danger, .badge.bg-danger {
+    background-color: var(--color-danger-light) !important;
+    color: var(--color-danger) !important;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.badge-soft-info, .badge.bg-info {
+    background-color: var(--color-cyan-light) !important;
+    color: #0369a1 !important;
+    border: 1px solid rgba(7, 155, 223, 0.2);
+}
+
+.badge.bg-primary {
+    background-color: var(--color-primary-light) !important;
+    color: var(--color-primary) !important;
+    border: 1px solid rgba(20, 80, 168, 0.2);
+}
+
+/* Semáforo FEFO */
+.semaforo-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+.semaforo-verde { background-color: var(--color-success); box-shadow: 0 0 6px rgba(22, 163, 106, 0.6); }
+.semaforo-amarillo { background-color: var(--color-gold); box-shadow: 0 0 6px rgba(255, 201, 0, 0.6); }
+.semaforo-rojo { background-color: var(--color-danger); box-shadow: 0 0 6px rgba(220, 53, 69, 0.6); }
+.semaforo-vencido { background-color: #1e293b; }
+.semaforo-cuarentena { background-color: #64748b; }
+
+/* --------------------------------------------------------------------------
+   ESTILOS PREMIUM TOM SELECT (BUSCADOR INTELIGENTE)
+   -------------------------------------------------------------------------- */
+.ts-wrapper.form-select, .ts-wrapper.single .ts-control {
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    padding: 0.65rem 0.95rem !important;
+    font-size: 0.95rem !important;
+    background-color: #ffffff !important;
+    box-shadow: none !important;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+.ts-wrapper.single .ts-control input {
+    font-size: 0.95rem !important;
+    color: var(--color-text-main) !important;
+}
+
+.ts-wrapper.focus .ts-control {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px rgba(20, 80, 168, 0.15) !important;
+}
+
+.ts-dropdown {
+    border: 1px solid var(--color-border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 25px rgba(20, 80, 168, 0.12) !important;
+    padding: 0.35rem 0 !important;
+    z-index: 1050 !important;
+}
+
+.ts-dropdown .option {
+    padding: 0.65rem 1rem !important;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.15s ease;
+}
+
+.ts-dropdown .option:last-child {
+    border-bottom: none;
+}
+
+.ts-dropdown .active {
+    background-color: var(--color-primary-light) !important;
+    color: var(--color-primary) !important;
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE DESIGN
+   -------------------------------------------------------------------------- */
+@media (max-width: 992px) {
+    .app-sidebar {
+        position: fixed;
+        left: -265px;
+        height: 100vh;
+    }
+    .app-sidebar.show {
+        left: 0;
+    }
+    .app-content {
+        padding: 1.25rem 1rem;
+    }
+    .app-topbar {
+        padding: 0 1rem;
+    }
+}

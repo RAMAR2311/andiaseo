@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuarios y Roles{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold text-dark mb-1">Usuarios del Sistema</h3>
+        <p class="text-muted small mb-0">Control de personal con acceso a bodega y auditoría de inventario.</p>
+    </div>
+    <button class="btn btn-brand" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
+        <i class="fa-solid fa-user-plus me-1"></i> Nuevo Usuario
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Nombre Completo</th>
+                        <th>Nombre de Usuario</th>
+                        <th>Rol de Acceso</th>
+                        <th>Estado</th>
+                        <th>Fecha de Alta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td class="ps-4 fw-semibold text-dark">{{ u.nombre }}</td>
+                        <td><code>{{ u.username }}</code></td>
+                        <td>
+                            {% if u.rol == 'admin' %}
+                                <span class="badge bg-danger text-uppercase"><i class="fa-solid fa-crown me-1"></i> Administrador</span>
+                            {% elif u.rol == 'almacenista' %}
+                                <span class="badge bg-primary text-uppercase"><i class="fa-solid fa-dolly me-1"></i> Almacenista</span>
+                            {% else %}
+                                <span class="badge bg-info text-dark text-uppercase"><i class="fa-solid fa-clipboard-check me-1"></i> Auditor</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.activo %}
+                                <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary"><i class="fa-solid fa-ban me-1"></i> Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ u.creado_en|fecha }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Usuario -->
+<div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4 border-0">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-plus me-2 text-teal"></i>Nuevo Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('auth_bp.crear_usuario') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Nombre y Apellido</label>
+                        <input type="text" name="nombre" class="form-control" placeholder="Ej: Carlos Ramírez" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Nombre de Usuario (Login)</label>
+                        <input type="text" name="username" class="form-control" placeholder="Ej: cramirez" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Contraseña</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Rol en Sistema</label>
+                        <select name="rol" class="form-select" required>
+                            <option value="almacenista">Almacenista (Operaciones de Bodega, Fraccionamiento y Despachos)</option>
+                            <option value="auditor">Auditor (Consulta de Kardex, Reportes y Cuarentena)</option>
+                            <option value="admin">Administrador (Acceso Total y Configuración)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-brand">Guardar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

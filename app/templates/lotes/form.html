@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Nuevo Lote Sanitario{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-0">
+                <h4 class="fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-traffic-light text-teal me-2"></i>Registrar Nuevo Lote Sanitario
+                </h4>
+                <p class="text-muted small mb-0">Creación de lote con fecha de producción, vencimiento y trazabilidad sanitaria.</p>
+            </div>
+            <div class="card-body p-4 pt-2">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Producto Químico / Insumo <span class="text-danger">*</span></label>
+                            <select name="producto_id" id="prodSelectLote" class="form-select" required>
+                                <option value="">Seleccione el producto...</option>
+                                {% for p in productos %}
+                                    <option value="{{ p.id }}">{{ p.codigo_referencia }} - {{ p.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Presentación Asociada</label>
+                            <select name="presentacion_id" id="presSelectLote" class="form-select">
+                                <option value="">A Granel / Tanque Matriz</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Número de Lote <span class="text-danger">*</span></label>
+                            <input type="text" name="numero_lote" class="form-control" placeholder="Ej: LOT-2026-009" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Cantidad Inicial</label>
+                            <input type="number" step="0.01" min="0" name="cantidad_inicial" class="form-control" placeholder="0.00" value="0.00">
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Fecha de Fabricación / Producción <span class="text-danger">*</span></label>
+                            <input type="date" name="fecha_produccion" class="form-control" value="{{ ahora.strftime('%Y-%m-%d') }}" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Fecha de Vencimiento <span class="text-danger">*</span></label>
+                            <input type="date" name="fecha_vencimiento" class="form-control" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Registro Sanitario / Notificación Sanitaria (INVIMA / Ambiental)</label>
+                            <input type="text" name="registro_sanitario" class="form-control" placeholder="Ej: INVIMA 2026-NSO-99881">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{{ url_for('lotes_bp.list_lotes') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-brand px-4">
+                            <i class="fa-solid fa-save me-1"></i> Guardar Lote
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('prodSelectLote').addEventListener('change', function() {
+    const prodId = this.value;
+    const presSelect = document.getElementById('presSelectLote');
+    presSelect.innerHTML = '<option value="">A Granel / Tanque Matriz</option>';
+
+    if (prodId) {
+        fetch(`/inventario/api/presentaciones/${prodId}`)
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = `${p.nombre}`;
+                    presSelect.appendChild(opt);
+                });
+            });
+    }
+});
+</script>
+{% endblock %}

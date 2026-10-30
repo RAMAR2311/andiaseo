@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Revisar Extracción de Factura - AndiaSeo{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-clipboard-check text-success me-2"></i>
+                    Revisión de Factura Extraída por Inteligencia Artificial
+                </h5>
+                <small class="text-muted">Verifica los productos asociados antes de asentarlos en el Kardex y actualizar los stocks.</small>
+            </div>
+            <span class="badge {% if tipo_operacion == 'compra' %}bg-success{% else %}bg-primary{% endif %} px-3 py-2 text-uppercase fs-6">
+                {% if tipo_operacion == 'compra' %}Entrada por Compra{% else %}Salida por Venta / Despacho{% endif %}
+            </span>
+        </div>
+
+        <form method="POST" action="{{ url_for('documentos_ai_bp.revisar_documento') }}" id="reviewForm">
+            <div class="card-body p-4">
+                <!-- Metadatos de la Factura -->
+                <div class="row g-3 mb-4 p-3 bg-light rounded border">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">N° Factura / Remisión:</label>
+                        <input type="text" name="numero_factura" class="form-control" value="{{ factura.numero_factura }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Fecha del Documento:</label>
+                        <input type="date" name="fecha_factura" class="form-control" value="{{ factura.fecha or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{% if tipo_operacion == 'compra' %}Proveedor:{% else %}Cliente:{% endif %}</label>
+                        <input type="text" name="tercero" class="form-control" value="{{ factura.tercero or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Observaciones Generales:</label>
+                        <input type="text" name="observaciones" class="form-control" value="{{ factura.observaciones or '' }}">
+                    </div>
+                </div>
+
+                <!-- Tabla de Productos Extraídos -->
+                <h6 class="fw-bold mb-3">
+                    <i class="fa-solid fa-list-check me-2"></i>
+                    Productos y Lotes a Procesar ({{ items_procesados|length }} detectados)
+                </h6>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr class="small text-uppercase">
+                                <th style="width: 25%;">Detectado en Factura</th>
+                                <th style="width: 25%;">Asignar a Catálogo Andiaseo</th>
+                                <th style="width: 10%;">Cant.</th>
+                                {% if tipo_operacion == 'compra' %}
+                                    <th style="width: 12%;">Costo Unit.</th>
+                                    <th style="width: 14%;">Lote Asignado</th>
+                                    <th style="width: 14%;">Vencimiento</th>
+                                {% else %}
+                                    <th style="width: 40%;" colspan="3">Lote de Salida (Prioridad FEFO)</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items_procesados %}
+                            {% set it = item.original %}
+                            {% set idx = item.index %}
+                            <tr>
+                                <!-- Datos originales leídos por IA -->
+                                <td>
+                                    <div class="fw-bold text-dark">{{ it.nombre }}</div>
+                                    <div class="small text-muted">
+                                        {% if it.codigo %}<strong>Ref:</strong> {{ it.codigo }} | {% endif %}
+                                        {% if it.presentacion_sugerida %}<strong>Presentación:</strong> {{ it.presentacion_sugerida }}{% endif %}
+                                    </div>
+                                </td>
+
+                                <!-- Selector de Producto Andiaseo -->
+                                <td>
+                                    <select name="producto_id_{{ idx }}" class="form-select form-select-sm select-prod" required>
+                                        <option value="">-- Seleccionar Producto --</option>
+                                        {% for prod in productos %}
+                                        <option value="{{ prod.id }}" {% if item.match_producto_id == prod.id %}selected{% endif %}>
+                                            {{ prod.codigo_referencia }} - {{ prod.nombre }} (Stock: {{ prod.stock_actual_total }} {{ prod.unidad_base }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    
+                                    <div class="mt-1">
+                                        <select name="presentacion_id_{{ idx }}" class="form-select form-select-sm text-secondary">
+                                            <option value="">-- Presentación Base (Granel/Directo) --</option>
+                                            {% for pres in presentaciones %}
+                                            <option value="{{ pres.id }}">
+                                                {{ pres.producto.nombre }} - {{ pres.nombre_presentacion }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </td>
+
+                                <!-- Cantidad -->
+                                <td>
+                                    <input type="number" step="0.01" min="0.01" name="cantidad_{{ idx }}" class="form-control form-control-sm text-center fw-bold" value="{{ it.cantidad or 1.0 }}" required>
+                                </td>
+
+                                {% if tipo_operacion == 'compra' %}
+                                <!-- Costo Unitario -->
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" min="0" name="costo_{{ idx }}" class="form-control form-control-sm" value="{{ it.costo_unitario or 0 }}">
+                                    </div>
+                                </td>
+
+                                <!-- Lote de Entrada -->
+                                <td>
+                                    <input type="text" name="lote_{{ idx }}" class="form-control form-control-sm text-uppercase" value="{{ it.numero_lote }}" placeholder="Autogenerar">
+                                </td>
+
+                                <!-- Vencimiento -->
+                                <td>
+                                    <input type="date" name="vencimiento_{{ idx }}" class="form-control form-control-sm" value="{{ it.fecha_vencimiento }}">
+                                </td>
+                                {% else %}
+                                <!-- Asignación FEFO para Salida/Venta -->
+                                <td colspan="3">
+                                    {% if item.sugerencia_lote_numero %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-success p-2">
+                                            <i class="fa-solid fa-check-circle me-1"></i> Sugerido FEFO: Lote {{ item.sugerencia_lote_numero }}
+                                        </span>
+                                        <input type="hidden" name="lote_id_{{ idx }}" value="{{ item.sugerencia_lote_id }}">
+                                        <small class="text-muted">(Lote más próximo a vencer apto para despacho)</small>
+                                    </div>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark p-2">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Sin sugerencia automática: Se tomará del primer lote disponible con existencias.
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="card-footer bg-white p-3 border-top d-flex justify-content-between align-items-center">
+                <button type="submit" name="accion" value="cancelar" class="btn btn-outline-danger" onclick="return confirm('¿Seguro que deseas descartar esta extracción?');">
+                    <i class="fa-solid fa-xmark me-1"></i> Descartar
+                </button>
+                <button type="submit" name="accion" value="confirmar" class="btn btn-success px-4 fw-bold">
+                    <i class="fa-solid fa-check-double me-1"></i> 
+                    {% if tipo_operacion == 'compra' %}Confirmar Entrada a Inventario{% else %}Confirmar Despacho / Salida{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

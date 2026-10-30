@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Escanear Factura con IA - AndiaSeo{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>
+                        Escanear Documento con Inteligencia Artificial (OpenAI)
+                    </h5>
+                    <small class="text-muted">Procesa facturas de compra o venta en formato PDF o Imagen para actualizar el inventario automáticamente.</small>
+                </div>
+                <span class="badge {% if tipo_operacion == 'compra' %}bg-success{% else %}bg-primary{% endif %} px-3 py-2 text-uppercase">
+                    {% if tipo_operacion == 'compra' %}Entrada / Compras{% else %}Salida / Factura de Venta{% endif %}
+                </span>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <input type="hidden" name="tipo_operacion" value="{{ tipo_operacion }}">
+
+                    <!-- Selector de Tipo de Operación -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">¿Qué tipo de documento deseas procesar?</label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check p-3 border rounded shadow-sm h-100 {% if tipo_operacion == 'compra' %}border-success bg-light-subtle{% endif %}">
+                                    <input class="form-check-input" type="radio" name="tipo_operacion" id="op_compra" value="compra" {% if tipo_operacion == 'compra' %}checked{% endif %} onchange="window.location.href='{{ url_for('documentos_ai_bp.subir_documento', tipo='compra') }}'">
+                                    <label class="form-check-label w-100 cursor-pointer" for="op_compra">
+                                        <div class="fw-bold text-success"><i class="fa-solid fa-cart-flatbed me-1"></i> Factura de Compra (Proveedor)</div>
+                                        <small class="text-muted">Ingresa productos, aumenta stock físico y crea lotes con vencimiento.</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check p-3 border rounded shadow-sm h-100 {% if tipo_operacion == 'venta' %}border-primary bg-light-subtle{% endif %}">
+                                    <input class="form-check-input" type="radio" name="tipo_operacion" id="op_venta" value="venta" {% if tipo_operacion == 'venta' %}checked{% endif %} onchange="window.location.href='{{ url_for('documentos_ai_bp.subir_documento', tipo='venta') }}'">
+                                    <label class="form-check-label w-100 cursor-pointer" for="op_venta">
+                                        <div class="fw-bold text-primary"><i class="fa-solid fa-file-invoice-dollar me-1"></i> Factura de Venta (Salida / Despacho)</div>
+                                        <small class="text-muted">Descuenta existencias automáticamente según prioridad de vencimiento FEFO.</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Zona de Arrastrar y Soltar Archivo -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Selecciona el archivo de la factura:</label>
+                        <div class="border-2 border-dashed rounded p-4 text-center bg-light cursor-pointer" id="dropArea" style="border: 2px dashed #b1c7dc;">
+                            <i class="fa-solid fa-cloud-arrow-up fa-3x text-secondary mb-3"></i>
+                            <h6 class="fw-bold text-dark">Haz clic para seleccionar o arrastra el archivo aquí</h6>
+                            <p class="small text-muted mb-2">Formatos soportados: PDF, JPG, PNG, WEBP (Facturas digitales o fotos legibles)</p>
+                            <input type="file" name="documento" id="documentoInput" class="d-none" accept=".pdf,.png,.jpg,.jpeg,.webp" required>
+                            <div id="fileSelectedInfo" class="badge bg-secondary p-2 mt-2 d-none">
+                                <i class="fa-solid fa-file-lines me-1"></i> <span id="fileNameDisplay"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerta de procesamiento con spinner -->
+                    <div id="loadingBanner" class="alert alert-info d-none align-items-center gap-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <div>
+                            <strong>Analizando con OpenAI...</strong>
+                            <div class="small">Extrayendo números de factura, productos, cantidades y fechas. Esto tomará solo unos segundos.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <a href="{{ url_for('inventory_bp.list_productos') }}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Volver al Catálogo
+                        </a>
+                        <button type="submit" id="btnSubmit" class="btn btn-primary px-4">
+                            <i class="fa-solid fa-wand-sparkles me-1"></i> Analizar Factura con IA
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const dropArea = document.getElementById('dropArea');
+    const input = document.getElementById('documentoInput');
+    const fileInfo = document.getElementById('fileSelectedInfo');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const form = document.getElementById('uploadForm');
+    const loadingBanner = document.getElementById('loadingBanner');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    dropArea.addEventListener('click', () => input.click());
+
+    input.addEventListener('change', () => {
+        if (input.files.length > 0) {
+            fileNameDisplay.textContent = input.files[0].name;
+            fileInfo.classList.remove('d-none');
+        }
+    });
+
+    ['dragover', 'dragenter'].forEach(eventName => {
+        dropArea.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropArea.style.backgroundColor = '#e8f4fc';
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropArea.style.backgroundColor = '#f8f9fa';
+        }, false);
+    });
+
+    dropArea.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            input.files = files;
+            fileNameDisplay.textContent = files[0].name;
+            fileInfo.classList.remove('d-none');
+        }
+    });
+
+    form.addEventListener('submit', () => {
+        loadingBanner.classList.remove('d-none');
+        loadingBanner.classList.add('d-flex');
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Procesando...';
+    });
+</script>
+{% endblock %}
+

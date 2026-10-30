@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Registro de Mermas y Derrames Químicos{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-0">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-3">
+                        <i class="fa-solid fa-triangle-exclamation fa-2x"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-dark mb-0">Registro y Control de Mermas Químicas</h4>
+                        <p class="text-muted small mb-0">Justificación y descuento formal por rotura, evaporación, derrames o vencimientos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 pt-2">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Producto Químico / Insumo <span class="text-danger">*</span></label>
+                            <select name="producto_id" id="prodSelectMerma" class="form-select" required>
+                                <option value="">Seleccione el producto afectado...</option>
+                                {% for p in productos %}
+                                    <option value="{{ p.id }}">{{ p.codigo_referencia }} - {{ p.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Presentación Comercial (Opcional)</label>
+                            <select name="presentacion_id" id="presSelectMerma" class="form-select">
+                                <option value="">A Granel / Unidad Base Directa</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Lote Afectado (Opcional)</label>
+                            <select name="lote_id" id="loteSelectMerma" class="form-select">
+                                <option value="">Cargando lotes...</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Cantidad Perdida / Merma <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0.01" name="cantidad" class="form-control form-control-lg" placeholder="0.00" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Tipo / Causal de Merma <span class="text-danger">*</span></label>
+                            <select name="tipo_merma" class="form-select" required>
+                                <option value="">Seleccione la causa operativa...</option>
+                                {% for mot in motivos_merma %}
+                                    <option value="{{ mot }}">{{ mot }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Nro. de Acta o Informe de Incidente</label>
+                            <input type="text" name="acta_soporte" class="form-control" value="ACTA-MERMA-{{ ahora.strftime('%Y%m%d%H%M') }}">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Detalle del Incidente y Medidas Correctivas <span class="text-danger">*</span></label>
+                            <textarea name="detalle" class="form-control" rows="3" placeholder="Describa cómo ocurrió el incidente, área de la bodega y disposición final de los residuos..." required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger bg-opacity-10 text-danger border-danger mt-4 mb-3 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation fs-4"></i>
+                        <small>Esta acción descontará las unidades o litros indicados del stock físico activo y quedará registrada en el Kardex con auditoría del usuario actual.</small>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('dashboard_bp.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Asentar Merma en Kardex
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const prodSelectMerma = document.getElementById('prodSelectMerma');
+const presSelectMerma = document.getElementById('presSelectMerma');
+const loteSelectMerma = document.getElementById('loteSelectMerma');
+
+function actualizarLotesMerma() {
+    const prodId = prodSelectMerma.value;
+    const presId = presSelectMerma.value;
+    loteSelectMerma.innerHTML = '<option value="">Sin lote específico / Indistinto</option>';
+
+    if (prodId) {
+        let url = `/inventario/api/lotes-fefo/${prodId}`;
+        if (presId) url += `?presentacion_id=${presId}`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                data.lotes.forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.id;
+                    opt.textContent = `Lote: ${l.numero_lote} (Disp: ${l.cantidad_disponible} - Vence: ${l.fecha_vencimiento})`;
+                    loteSelectMerma.appendChild(opt);
+                });
+            });
+    }
+}
+
+prodSelectMerma.addEventListener('change', function() {
+    const prodId = this.value;
+    presSelectMerma.innerHTML = '<option value="">A Granel / Unidad Base Directa</option>';
+
+    if (prodId) {
+        fetch(`/inventario/api/presentaciones/${prodId}`)
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = `${p.nombre}`;
+                    presSelectMerma.appendChild(opt);
+                });
+                actualizarLotesMerma();
+            });
+    } else {
+        actualizarLotesMerma();
+    }
+});
+
+presSelectMerma.addEventListener('change', actualizarLotesMerma);
+</script>
+{% endblock %}

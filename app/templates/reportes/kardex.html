@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Kardex Inmutable de Movimientos{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold text-dark mb-1">Kardex Oficial de Movimientos</h3>
+        <p class="text-muted small mb-0">Historial inmutable y auditable de todas las entradas, salidas, envasados y mermas.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('reportes_bp.exportar_kardex', **filtros) }}" class="btn btn-outline-success shadow-sm d-inline-flex align-items-center gap-2">
+            <i class="fa-solid fa-file-excel"></i> Exportar a Excel (.xlsx)
+        </a>
+    </div>
+</div>
+
+<!-- Filtros de Consulta -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="{{ url_for('reportes_bp.kardex') }}" class="row g-2 align-items-center">
+            <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label small text-muted mb-1">Desde</label>
+                <input type="date" name="fecha_inicio" value="{{ filtros.fecha_inicio or '' }}" class="form-control form-control-sm bg-light">
+            </div>
+            <div class="col-12 col-sm-6 col-md-2">
+                <label class="form-label small text-muted mb-1">Hasta</label>
+                <input type="date" name="fecha_fin" value="{{ filtros.fecha_fin or '' }}" class="form-control form-control-sm bg-light">
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small text-muted mb-1">Producto</label>
+                <select name="producto_id" class="form-select form-select-sm bg-light">
+                    <option value="">Todos los Productos</option>
+                    {% for p in productos %}
+                        <option value="{{ p.id }}" {% if filtros.producto_id == p.id %}selected{% endif %}>{{ p.codigo_referencia }} - {{ p.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small text-muted mb-1">Tipo de Movimiento</label>
+                <select name="tipo_movimiento" class="form-select form-select-sm bg-light">
+                    <option value="">Todos los Tipos</option>
+                    {% for clave, etiqueta in tipos_movimiento.items() %}
+                        <option value="{{ clave }}" {% if filtros.tipo_movimiento == clave %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-2 d-flex gap-1 align-items-end mt-sm-auto">
+                <button type="submit" class="btn btn-sm btn-brand w-100"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                <a href="{{ url_for('reportes_bp.kardex') }}" class="btn btn-sm btn-outline-secondary" title="Limpiar"><i class="fa-solid fa-rotate-left"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla del Kardex -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 datatable-custom">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-3">ID / Fecha</th>
+                        <th>Tipo</th>
+                        <th>Producto / Formato</th>
+                        <th>Lote</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">Stock Previo</th>
+                        <th class="text-end">Stock Nuevo</th>
+                        <th>Doc. Soporte</th>
+                        <th>Responsable</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in movimientos %}
+                    <tr>
+                        <td class="ps-3">
+                            <span class="fw-bold text-dark font-monospace">#{{ m.id }}</span>
+                            <small class="d-block text-muted">{{ m.fecha|fecha('%d/%m/%Y %H:%M') }}</small>
+                        </td>
+                        <td>
+                            {% if m.tipo_movimiento == 'ENTRADA_COMPRA' %}
+                                <span class="badge badge-soft-success"><i class="fa-solid fa-arrow-down me-1"></i> Compra</span>
+                            {% elif m.tipo_movimiento == 'SALIDA_DESPACHO' %}
+                                <span class="badge badge-soft-danger"><i class="fa-solid fa-arrow-up me-1"></i> Despacho</span>
+                            {% elif m.tipo_movimiento == 'FRACCIONAMIENTO_ORIGEN' %}
+                                <span class="badge badge-soft-warning"><i class="fa-solid fa-flask me-1"></i> Consumo Envasado</span>
+                            {% elif m.tipo_movimiento == 'FRACCIONAMIENTO_DESTINO' %}
+                                <span class="badge badge-soft-info"><i class="fa-solid fa-bottle-droplet me-1"></i> Ingreso Envasado</span>
+                            {% elif m.tipo_movimiento == 'MERMA_DERRAME' %}
+                                <span class="badge badge-soft-danger"><i class="fa-solid fa-droplet-slash me-1"></i> Merma</span>
+                            {% else %}
+                                <span class="badge badge-soft-secondary">{{ m.tipo_legible }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ m.producto.nombre }}</div>
+                            <small class="text-muted">{{ m.presentacion.nombre_presentacion if m.presentacion else 'Granel (' ~ m.producto.unidad_legible ~ ')' }}</small>
+                        </td>
+                        <td>
+                            {% if m.lote %}
+                                <code>{{ m.lote.numero_lote }}</code>
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <strong class="{% if m.cantidad > 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if m.cantidad > 0 %}+{% endif %}{{ m.cantidad|number }}
+                            </strong>
+                        </td>
+                        <td class="text-end text-muted small">{{ m.stock_anterior|number }}</td>
+                        <td class="text-end fw-bold">{{ m.stock_nuevo|number }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ m.documento_soporte or '-' }}</span>
+                        </td>
+                        <td class="small text-muted">{{ m.usuario.nombre }}</td>
+                        <td><small class="text-muted">{{ m.motivo_observaciones }}</small></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">No se registran movimientos con los filtros aplicados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

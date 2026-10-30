@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block title %}Fraccionamiento / Envasado de Químicos{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-0">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-teal bg-opacity-10 text-teal rounded-3">
+                        <i class="fa-solid fa-prescription-bottle fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-dark mb-0">Orden de Fraccionamiento y Envasado</h4>
+                        <p class="text-muted small mb-0">
+                            Transformación atómica: Químico a Granel + Insumos de Empaque &rarr; Presentación Comercial Terminada.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 pt-2">
+                <form method="POST" id="envasadoForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Paso 1: Origen a Granel -->
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                            <span class="badge bg-primary rounded-pill">1</span> Químico a Granel (Materia Prima a Descontar)
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-5">
+                                <label class="form-label fw-semibold small">Producto Químico Matriz <span class="text-danger">*</span></label>
+                                <select name="granel_id" id="granelSelect" class="form-select form-select-lg" required>
+                                    <option value="">Seleccione el químico base...</option>
+                                    {% for q in quimicos_granel %}
+                                        <option value="{{ q.id }}" data-unidad="{{ q.unidad_legible }}" data-stock="{{ q.stock_actual_total }}">
+                                            {{ q.codigo_referencia }} - {{ q.nombre }} (Stock: {{ q.stock_actual_total|number }} {{ q.unidad_legible }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small">Lote Matriz de Origen (FEFO)</label>
+                                <select name="lote_granel_id" id="loteGranelSelect" class="form-select form-select-lg">
+                                    <option value="">Cargando lotes del químico...</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-semibold small">Cantidad a Fraccionar <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-lg">
+                                    <input type="number" step="0.01" min="0.01" name="litros_fraccionar" id="litrosFraccionar" class="form-control" placeholder="Ej: 100" required>
+                                    <span class="input-group-text bg-white" id="unidadGranelLabel">L</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 2: Insumos de Empaque -->
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary rounded-pill">2</span> Insumos de Empaque y Tapas (Materiales Consumidos)
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small">Envase Vacío / Botella</label>
+                                <select name="insumo_envase_id" id="envaseSelect" class="form-select">
+                                    <option value="">Ninguno / No descontar envase</option>
+                                    {% for ins in insumos_empaque %}
+                                        <option value="{{ ins.id }}" data-stock="{{ ins.stock_actual_total }}">{{ ins.nombre }} (Stock: {{ ins.stock_actual_total|number(0) }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <label class="form-label fw-semibold small">Cant. Envases</label>
+                                <input type="number" step="1" min="0" name="cant_envases" id="cantEnvases" class="form-control" placeholder="0">
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small">Tapa / Sello / Válvula</label>
+                                <select name="insumo_tapa_id" id="tapaSelect" class="form-select">
+                                    <option value="">Ninguna / No descontar tapa</option>
+                                    {% for ins in insumos_empaque %}
+                                        <option value="{{ ins.id }}" data-stock="{{ ins.stock_actual_total }}">{{ ins.nombre }} (Stock: {{ ins.stock_actual_total|number(0) }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <label class="form-label fw-semibold small">Cant. Tapas</label>
+                                <input type="number" step="1" min="0" name="cant_tapas" id="cantTapas" class="form-control" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 3: Producto Terminado Generado -->
+                    <div class="p-3 bg-light rounded-3 border mb-4">
+                        <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                            <span class="badge bg-success rounded-pill">3</span> Producto Terminado Resultante (Ingreso a Stock)
+                        </h5>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small">Presentación Comercial Destino <span class="text-danger">*</span></label>
+                                <select name="presentacion_destino_id" id="presDestinoSelect" class="form-select form-select-lg" required>
+                                    <option value="">Seleccione el químico base primero...</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-semibold small">Unidades Terminadas <span class="text-danger">*</span></label>
+                                <input type="number" step="1" min="1" name="unidades_producidas" id="unidadesProducidas" class="form-control form-control-lg" placeholder="Ej: 26" required>
+                            </div>
+
+                            <div class="col-12 col-md-5">
+                                <label class="form-label fw-semibold small">Nuevo Número de Lote Terminado <span class="text-danger">*</span></label>
+                                <input type="text" name="numero_lote_nuevo" id="numeroLoteNuevo" class="form-control form-control-lg" placeholder="Ej: LOT-ENV-2026-01" required>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small">Fecha Vencimiento del Terminado <span class="text-danger">*</span></label>
+                                <input type="date" name="fecha_vencimiento_terminado" id="fechaVencTerminado" class="form-control" required>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small">Nro. Orden de Producción / Envasado</label>
+                                <input type="text" name="orden_envasado" class="form-control" value="ORD-ENV-{{ ahora.strftime('%Y%m%d%H%M') }}">
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold small">Observaciones Técnicas</label>
+                                <input type="text" name="observaciones" class="form-control" placeholder="Operario responsable, lote matriz, etc.">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+                        <i class="fa-solid fa-triangle-exclamation fs-4"></i>
+                        <div>
+                            <strong>Seguridad Transaccional:</strong> Al presionar confirmar, el sistema descontará atómicamente el químico a granel y los empaques, ingresará las unidades terminadas con su nuevo lote y registrará 3 asientos auditables en el Kardex. Si hay stock insuficiente, la operación será rechazada sin alterar datos.
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('dashboard_bp.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-brand btn-lg px-4" id="btnEjecutarEnvasado">
+                            <i class="fa-solid fa-check-double me-1"></i> Ejecutar Envasado en Firme
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const granelSelect = document.getElementById('granelSelect');
+const loteGranelSelect = document.getElementById('loteGranelSelect');
+const presDestinoSelect = document.getElementById('presDestinoSelect');
+const unidadGranelLabel = document.getElementById('unidadGranelLabel');
+const litrosFraccionar = document.getElementById('litrosFraccionar');
+const unidadesProducidas = document.getElementById('unidadesProducidas');
+const cantEnvases = document.getElementById('cantEnvases');
+const cantTapas = document.getElementById('cantTapas');
+const numeroLoteNuevo = document.getElementById('numeroLoteNuevo');
+const fechaVencTerminado = document.getElementById('fechaVencTerminado');
+
+let presentacionesActuales = [];
+
+granelSelect.addEventListener('change', function() {
+    const prodId = this.value;
+    const opt = this.options[this.selectedIndex];
+    if (opt && opt.dataset.unidad) {
+        unidadGranelLabel.textContent = opt.dataset.unidad;
+    }
+
+    presDestinoSelect.innerHTML = '<option value="">Cargando presentaciones...</option>';
+    loteGranelSelect.innerHTML = '<option value="">Cargando lotes...</option>';
+
+    if (!prodId) {
+        presDestinoSelect.innerHTML = '<option value="">Seleccione el químico base primero...</option>';
+        loteGranelSelect.innerHTML = '<option value="">Seleccione el químico base primero...</option>';
+        return;
+    }
+
+    // Cargar presentaciones comerciales de este químico
+    fetch(`/inventario/api/presentaciones/${prodId}`)
+        .then(res => res.json())
+        .then(data => {
+            presentacionesActuales = data;
+            presDestinoSelect.innerHTML = '<option value="">Seleccione presentación destino...</option>';
+            data.forEach(p => {
+                const o = document.createElement('option');
+                o.value = p.id;
+                o.dataset.factor = p.factor;
+                o.textContent = `${p.nombre} (Contiene ${p.factor} ${unidadGranelLabel.textContent})`;
+                presDestinoSelect.appendChild(o);
+            });
+        });
+
+    // Cargar lotes FEFO disponibles del granel
+    fetch(`/inventario/api/lotes-fefo/${prodId}`)
+        .then(res => res.json())
+        .then(data => {
+            loteGranelSelect.innerHTML = '<option value="">Sin lote específico / Mezcla directa</option>';
+            data.lotes.forEach(l => {
+                const o = document.createElement('option');
+                o.value = l.id;
+                o.textContent = `Lote: ${l.numero_lote} (Disp: ${l.cantidad_disponible} - Vence: ${l.fecha_vencimiento})`;
+                if (l.es_sugerido) o.selected = true;
+                loteGranelSelect.appendChild(o);
+            });
+        });
+});
+
+// Asistencia en el cálculo automático de unidades envasadas
+function recalcularUnidades() {
+    const litros = parseFloat(litrosFraccionar.value) || 0;
+    const optPres = presDestinoSelect.options[presDestinoSelect.selectedIndex];
+    const factor = optPres ? parseFloat(optPres.dataset.factor) : 0;
+
+    if (litros > 0 && factor > 0) {
+        const unidadesCalculadas = Math.floor(litros / factor);
+        unidadesProducidas.value = unidadesCalculadas;
+        cantEnvases.value = unidadesCalculadas;
+        cantTapas.value = unidadesCalculadas;
+
+        // Generar sugerencia de lote terminado si está vacío
+        if (!numeroLoteNuevo.value) {
+            const hoy = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            numeroLoteNuevo.value = `LOT-FRAC-${hoy}-${unidadesCalculadas}`;
+        }
+    }
+}
+
+litrosFraccionar.addEventListener('input', recalcularUnidades);
+presDestinoSelect.addEventListener('change', recalcularUnidades);
+
+// Establecer fecha de vencimiento por defecto a 1 año a partir de hoy
+const fechaHoy = new Date();
+fechaHoy.setFullYear(fechaHoy.getFullYear() + 1);
+fechaVencTerminado.value = fechaHoy.toISOString().slice(0, 10);
+</script>
+{% endblock %}

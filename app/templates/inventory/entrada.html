@@ -172,19 +172,24 @@
                         <!-- Bloque de Trazabilidad y Lote -->
                         <div class="col-12">
                             <div class="p-3 bg-light rounded-3 border">
-                                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-traffic-light text-warning me-2"></i>Ficha Sanitaria de Lote (Regla FEFO)</h6>
+                                <h6 class="fw-bold text-dark mb-3">
+                                    <i class="fa-solid fa-traffic-light text-primary me-2"></i>Ficha de Lote y Trazabilidad
+                                </h6>
                                 <div class="row g-3">
                                     <div class="col-12 col-md-4">
                                         <label class="form-label fw-semibold small">Número de Lote <span class="text-danger">*</span></label>
-                                        <input type="text" name="numero_lote" class="form-control text-uppercase" placeholder="Ej: LOT-2026-CLO-01" required>
+                                        <input type="text" name="numero_lote" class="form-control text-uppercase" placeholder="Ej: LOT-2026-01" required>
                                     </div>
                                     <div class="col-12 col-md-4">
-                                        <label class="form-label fw-semibold small">Fecha de Producción</label>
+                                        <label class="form-label fw-semibold small">Fecha de Producción (Opcional)</label>
                                         <input type="date" name="fecha_produccion" class="form-control" value="{{ ahora.strftime('%Y-%m-%d') }}">
                                     </div>
-                                    <div class="col-12 col-md-4">
-                                        <label class="form-label fw-semibold small">Fecha de Vencimiento <span class="text-danger">*</span></label>
-                                        <input type="date" name="fecha_vencimiento" class="form-control" required>
+                                    <div class="col-12 col-md-4" id="contenedorFechaVencimiento">
+                                        <label class="form-label fw-semibold small">
+                                            Fecha de Vencimiento <span class="text-danger" id="reqVencimientoAsterisco">*</span>
+                                        </label>
+                                        <input type="date" name="fecha_vencimiento" id="fechaVencimientoInput" class="form-control">
+                                        <small class="text-muted" id="helpVencimiento">Opcional para productos no perecederos.</small>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label fw-semibold small">Registro Sanitario / Permiso Ambiental (Opcional)</label>
@@ -222,7 +227,8 @@ const catalogoProductos = [
         id: {{ p.id }},
         codigo: "{{ p.codigo_referencia|e }}",
         nombre: "{{ p.nombre|e }}",
-        unidad: "{{ p.unidad_legible|e }}"
+        unidad: "{{ p.unidad_legible|e }}",
+        requiere_vencimiento: {{ 'true' if p.requiere_vencimiento else 'false' }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
@@ -286,6 +292,23 @@ function selectProduct(p) {
 
     selectedCard.style.display = 'flex';
     smartInput.style.display = 'none';
+
+    // Ajustar obligatoriedad de fecha de vencimiento según el producto
+    const fVencInput = document.getElementById('fechaVencimientoInput');
+    const reqAsterisco = document.getElementById('reqVencimientoAsterisco');
+    const helpVenc = document.getElementById('helpVencimiento');
+
+    if (p.requiere_vencimiento) {
+        fVencInput.required = true;
+        reqAsterisco.style.display = 'inline';
+        helpVenc.textContent = 'Requerido para control sanitario FEFO de este producto químico.';
+        helpVenc.className = 'text-danger small';
+    } else {
+        fVencInput.required = false;
+        reqAsterisco.style.display = 'none';
+        helpVenc.textContent = 'Opcional (producto o insumo no perecedero).';
+        helpVenc.className = 'text-muted small';
+    }
 
     // Cargar presentaciones dinámicamente
     presSelect.innerHTML = '<option value="">Cargando presentaciones...</option>';

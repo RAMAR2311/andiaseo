@@ -79,6 +79,7 @@ class Producto(db.Model):
     stock_minimo_alerta = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     stock_actual_total = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     costo_unitario_base = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
+    requiere_vencimiento = db.Column(db.Boolean, default=True, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -176,8 +177,8 @@ class Lote(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey('producto.id'), nullable=False)
     presentacion_id = db.Column(db.Integer, db.ForeignKey('presentacion_comercial.id'), nullable=True)
     numero_lote = db.Column(db.String(60), nullable=False, index=True)
-    fecha_produccion = db.Column(db.Date, nullable=False)
-    fecha_vencimiento = db.Column(db.Date, nullable=False, index=True)
+    fecha_produccion = db.Column(db.Date, nullable=True)
+    fecha_vencimiento = db.Column(db.Date, nullable=True, index=True)
     registro_sanitario = db.Column(db.String(100), nullable=True)  # Ej: INVIMA o Registro Sanitario/Ambiental
     cantidad_inicial = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     cantidad_actual = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
@@ -200,6 +201,7 @@ class Lote(db.Model):
     def semaforo_fefo(self):
         """
         Algoritmo de Semáforo FEFO:
+        - 'no_aplica': sin fecha de vencimiento configurada
         - 'agotado': cantidad_actual <= 0 o estado 'AGOTADO'
         - 'cuarentena': estado 'CUARENTENA'
         - 'vencido': días < 0 o estado 'VENCIDO'
@@ -211,6 +213,8 @@ class Lote(db.Model):
             return 'cuarentena'
         if float(self.cantidad_actual or 0) <= 0 or self.estado == 'AGOTADO':
             return 'agotado'
+        if not self.fecha_vencimiento:
+            return 'no_aplica'
         dias = self.dias_para_vencer
         if dias < 0:
             return 'vencido'
@@ -225,7 +229,14 @@ class Lote(db.Model):
         """Devuelve diccionario con estilos y etiquetas para Jinja2."""
         sem = self.semaforo_fefo
         dias = self.dias_para_vencer
-        if sem == 'verde':
+        if sem == 'no_aplica':
+            return {
+                'color': 'info',
+                'icono': 'fa-infinity',
+                'texto': 'No Perecedero',
+                'alerta': 'Sin fecha de vencimiento (No aplica FEFO)'
+            }
+        elif sem == 'verde':
             return {
                 'color': 'success',
                 'icono': 'fa-check-circle',

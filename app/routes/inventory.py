@@ -66,6 +66,7 @@ def nuevo_producto():
         unidad_base = request.form.get('unidad_base', 'litros')
         stock_minimo = request.form.get('stock_minimo_alerta', type=float) or 0.0
         descripcion = request.form.get('descripcion', '').strip()
+        requiere_vencimiento = bool(request.form.get('requiere_vencimiento'))
         
         # Cantidad y lote inicial opcional (Saldo de Apertura)
         cantidad_inicial = request.form.get('cantidad_inicial', type=float) or 0.0
@@ -88,6 +89,8 @@ def nuevo_producto():
             unidad_base=unidad_base,
             stock_minimo_alerta=Decimal(str(stock_minimo)),
             stock_actual_total=Decimal('0.0'),
+            costo_unitario_base=Decimal('0.0'),
+            requiere_vencimiento=requiere_vencimiento,
             descripcion=descripcion,
             activo=True
         )
@@ -99,13 +102,15 @@ def nuevo_producto():
             if not numero_lote_inicial:
                 numero_lote_inicial = f"LOT-INI-{datetime.now().strftime('%y%m%d')}"
             
-            if fecha_venc_inicial_str:
-                try:
-                    f_venc = datetime.strptime(fecha_venc_inicial_str, '%Y-%m-%d').date()
-                except Exception:
+            f_venc = None
+            if requiere_vencimiento:
+                if fecha_venc_inicial_str:
+                    try:
+                        f_venc = datetime.strptime(fecha_venc_inicial_str, '%Y-%m-%d').date()
+                    except Exception:
+                        f_venc = date.today().replace(year=date.today().year + 1)
+                else:
                     f_venc = date.today().replace(year=date.today().year + 1)
-            else:
-                f_venc = date.today().replace(year=date.today().year + 1)
 
             lote_ini = Lote(
                 producto_id=producto.id,
@@ -297,15 +302,19 @@ def entrada_compra():
         factura_remision = request.form.get('documento_soporte', '').strip()
         observaciones = request.form.get('observaciones', '').strip()
 
-        if not producto_id or not cantidad or cantidad <= 0 or not numero_lote or not fecha_venc_str:
-            flash('Producto, cantidad, número de lote y fecha de vencimiento son requeridos.', 'danger')
+        producto = Producto.query.get_or_404(producto_id)
+        presentacion = db.session.get(PresentacionComercial, presentacion_id) if presentacion_id else None
+
+        if not producto_id or not cantidad or cantidad <= 0 or not numero_lote:
+            flash('Producto, cantidad y número de lote son requeridos.', 'danger')
+            return redirect(url_for('inventory_bp.entrada_compra'))
+
+        if producto.requiere_vencimiento and not fecha_venc_str:
+            flash(f'El producto "{producto.nombre}" tiene control sanitario activado. La fecha de vencimiento es requerida.', 'danger')
             return redirect(url_for('inventory_bp.entrada_compra'))
 
         fecha_prod = datetime.strptime(fecha_prod_str, '%Y-%m-%d').date() if fecha_prod_str else date.today()
-        fecha_venc = datetime.strptime(fecha_venc_str, '%Y-%m-%d').date()
-
-        producto = Producto.query.get_or_404(producto_id)
-        presentacion = db.session.get(PresentacionComercial, presentacion_id) if presentacion_id else None
+        fecha_venc = datetime.strptime(fecha_venc_str, '%Y-%m-%d').date() if fecha_venc_str else None
 
         # Actualizar costo promedio ponderado
         if costo_unitario > 0:

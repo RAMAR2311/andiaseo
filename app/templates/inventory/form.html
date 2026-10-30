@@ -63,6 +63,17 @@
                             <small class="text-muted">Generará alerta en dashboard si el total es menor a este valor.</small>
                         </div>
 
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold small">Control Sanitario / FEFO</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="switchVencimiento" name="requiere_vencimiento" value="1" {% if not producto or producto.requiere_vencimiento %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold small" for="switchVencimiento">
+                                    ¿Este producto vence? (Aplica regla FEFO)
+                                </label>
+                            </div>
+                            <small class="text-muted">Desmárcalo para herramientas, envases plásticos o insumos no perecederos.</small>
+                        </div>
+
                         {% if not producto %}
                         <!-- Bloque Opcional: Existencias Iniciales (Saldo de Apertura) -->
                         <div class="col-12">

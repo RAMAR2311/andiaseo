@@ -15,11 +15,14 @@ def obtener_lotes_fefo(producto_id, presentacion_id=None, solo_disponibles=True)
         query = query.filter(
             Lote.estado == 'ACTIVO',
             Lote.cantidad_actual > 0,
-            Lote.fecha_vencimiento >= date.today()
+            db.or_(
+                Lote.fecha_vencimiento.is_(None),
+                Lote.fecha_vencimiento >= date.today()
+            )
         )
         
-    # Ordenamiento FEFO: fecha_vencimiento ascendente (el más próximo a vencer primero)
-    return query.order_by(Lote.fecha_vencimiento.asc(), Lote.fecha_produccion.asc()).all()
+    # Ordenamiento FEFO: los que tienen vencimiento próximo primero, y los no perecederos (NULL) al final
+    return query.order_by(Lote.fecha_vencimiento.asc().nullslast(), Lote.fecha_produccion.asc().nullslast()).all()
 
 
 def sugerir_lote_fefo(producto_id, presentacion_id=None):
@@ -40,7 +43,7 @@ def validar_salida_lote(lote):
         return False, "El lote especificado no existe."
     if lote.estado == 'CUARENTENA':
         return False, f"El lote {lote.numero_lote} está en CUARENTENA y no puede despacharse."
-    if lote.estado == 'VENCIDO' or lote.dias_para_vencer < 0:
+    if lote.fecha_vencimiento and (lote.estado == 'VENCIDO' or lote.dias_para_vencer < 0):
         return False, f"ALERTA SANITARIA: El lote {lote.numero_lote} está VENCIDO (venció el {lote.fecha_vencimiento.strftime('%d/%m/%Y')}). Salida bloqueada."
     if float(lote.cantidad_actual or 0) <= 0:
         return False, f"El lote {lote.numero_lote} no tiene existencias disponibles."

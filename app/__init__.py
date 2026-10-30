@@ -69,6 +69,7 @@ def create_app(config_class=Config):
     from app.routes.reportes import reportes_bp
     from app.routes.documentos_ai import documentos_ai_bp
     from app.routes.terceros import terceros_bp
+    from app.routes.facturacion import facturacion_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/')
@@ -78,6 +79,7 @@ def create_app(config_class=Config):
     app.register_blueprint(reportes_bp, url_prefix='/reportes')
     app.register_blueprint(documentos_ai_bp, url_prefix='/documentos-ai')
     app.register_blueprint(terceros_bp, url_prefix='/terceros')
+    app.register_blueprint(facturacion_bp, url_prefix='/facturacion')
 
     # Manejadores de errores personalizados
     @app.errorhandler(404)

@@ -70,6 +70,12 @@
                 <span>Monitor FEFO / Lotes</span>
             </a>
 
+            <div class="nav-section-title">Comercial & Facturación</div>
+            <a href="{{ url_for('facturacion_bp.hub') }}" class="nav-item-link {% if request.endpoint.startswith('facturacion_bp.') %}active{% endif %}">
+                <i class="fa-solid fa-file-invoice-dollar text-success"></i>
+                <span>Compras y Ventas</span>
+            </a>
+
             <div class="nav-section-title">Operaciones con IA</div>
             <a href="{{ url_for('documentos_ai_bp.subir_documento', tipo='compra') }}" class="nav-item-link {% if request.endpoint == 'documentos_ai_bp.subir_documento' and request.args.get('tipo') != 'venta' %}active{% endif %}">
                 <i class="fa-solid fa-file-arrow-up text-info"></i>

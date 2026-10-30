@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Trazabilidad Factura {{ factura.documento }} - Andiaseo{% endblock %}
+
+{% block extra_head %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .app-sidebar, .app-topbar { display: none !important; }
+        .app-main { margin: 0 !important; padding: 0 !important; }
+        .card { border: none !important; box-shadow: none !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2 no-print">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{{ url_for('facturacion_bp.hub') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-arrow-left"></i> Volver
+        </a>
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h2 class="h3 fw-bold text-dark mb-0">Trazabilidad: {{ factura.documento }}</h2>
+                {% if factura.tipo_operacion == 'COMPRA' %}
+                <span class="badge bg-primary-subtle text-primary border border-primary px-3 py-1">Factura de Compra</span>
+                {% else %}
+                <span class="badge bg-success-subtle text-success border border-success px-3 py-1">Factura / Remisión de Venta</span>
+                {% endif %}
+            </div>
+            <div class="text-muted small mt-1">
+                <span>Registrado el {{ factura.fecha|fecha('%d/%m/%Y %H:%M') }} por {{ factura.usuario.nombre if factura.usuario else 'Sistema' }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        {% if factura.archivo_comprobante %}
+        <a href="{{ url_for('static', filename='uploads/' ~ factura.archivo_comprobante) }}" target="_blank" class="btn btn-outline-success">
+            <i class="fa-solid fa-paperclip me-1"></i>Ver Soporte Digital
+        </a>
+        {% endif %}
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="fa-solid fa-print me-1"></i>Imprimir Comprobante
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Ficha del Tercero (Cliente o Proveedor) -->
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-building-user text-primary me-2"></i>
+                    {% if factura.tipo_operacion == 'COMPRA' %}Datos del Proveedor{% else %}Datos del Cliente (Destinatario){% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if factura.tercero %}
+                <h5 class="fw-bold text-primary mb-2">{{ factura.tercero.nombre_razon_social }}</h5>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted">NIT / Identificación:</span>
+                        <span class="fw-bold font-monospace">{{ factura.tercero.documento_nit }}</span>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted">Contacto:</span>
+                        <span class="fw-semibold">{{ factura.tercero.contacto_nombre or 'No registrado' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted">Teléfono:</span>
+                        <span>{{ factura.tercero.telefono or 'No registrado' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted">Ciudad:</span>
+                        <span>{{ factura.tercero.ciudad or 'No registrada' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted">Dirección:</span>
+                        <span>{{ factura.tercero.direccion or 'No registrada' }}</span>
+                    </li>
+                </ul>
+                <div class="mt-3">
+                    <a href="{{ url_for('terceros_bp.detalle_tercero', id=factura.tercero.id) }}" class="btn btn-sm btn-outline-primary w-100 no-print">
+                        <i class="fa-solid fa-address-book me-1"></i>Ver Historial Completo del Tercero
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fa-solid fa-user-slash fa-2x mb-2 text-secondary d-block"></i>
+                    Operación sin tercero específico vinculado.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen Financiero y Trazabilidad -->
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-circle-check text-success me-2"></i>Resumen de Liquidación & Trazabilidad
+                </h5>
+                <span class="badge bg-secondary">{{ factura['items']|length }} Líneas de Producto</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 text-center mb-4">
+                    <div class="col-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <span class="text-muted small d-block">Total Unidades</span>
+                            <span class="fs-4 fw-bold text-dark">{{ factura.total_cantidad|number }}</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <span class="text-muted small d-block">Ítems Distintos</span>
+                            <span class="fs-4 fw-bold text-dark">{{ factura['items']|length }}</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <span class="text-muted small d-block">Total Liquidado</span>
+                            <span class="fs-4 fw-bold {% if factura.tipo_operacion == 'COMPRA' %}text-primary{% else %}text-success{% endif %}">
+                                {{ factura.total_valor|currency }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if factura.motivo_observaciones %}
+                <div class="p-3 rounded-3 border bg-light-subtle">
+                    <span class="fw-bold small d-block text-dark mb-1"><i class="fa-solid fa-comment-dots me-1 text-primary"></i>Observaciones y Notas de Remisión:</span>
+                    <p class="small mb-0 text-muted">{{ factura.motivo_observaciones }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla Detallada de Trazabilidad por Producto y Lote -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-boxes-stacked text-primary me-2"></i>Detalle de Productos, Lotes y Precios
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th class="ps-3">Código</th>
+                        <th>Producto Químico / Insumo</th>
+                        <th>Presentación Comercial</th>
+                        <th>Lote Sanitario</th>
+                        <th>Control Vencimiento (FEFO)</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">Precio Unitario</th>
+                        <th class="text-end pe-3">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for it in factura['items'] %}
+                    <tr>
+                        <td class="ps-3 font-monospace fw-bold text-muted">{{ it.producto.codigo_referencia }}</td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ it.producto.nombre }}</div>
+                            <small class="text-muted">{{ it.producto.tipo_legible }}</small>
+                        </td>
+                        <td>
+                            {% if it.presentacion %}
+                            <span class="badge bg-white text-dark border">{{ it.presentacion.nombre_presentacion }}</span>
+                            {% else %}
+                            <span class="text-muted small">A Granel / {{ it.producto.unidad_legible }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if it.lote %}
+                            <code class="fw-bold">{{ it.lote.numero_lote }}</code>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if it.lote %}
+                                {% set badge = it.lote.semaforo_badge %}
+                                <span class="badge bg-{{ badge.color }}-subtle text-{{ badge.color }} border border-{{ badge.color }}">
+                                    <i class="fa-solid {{ badge.icono }} me-1"></i>{{ badge.texto }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted small">Sin vencimiento</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold">
+                            {{ it.cantidad|number }}
+                            <small class="text-muted">{% if it.presentacion %}und{% else %}{{ it.producto.unidad_base }}{% endif %}</small>
+                        </td>
+                        <td class="text-end">{{ it.precio_unitario|currency }}</td>
+                        <td class="text-end pe-3 fw-bold text-dark">{{ it.subtotal|currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <th colspan="7" class="text-end fw-bold">TOTAL OPERACIÓN:</th>
+                        <th class="text-end pe-3 fw-bold fs-5 {% if factura.tipo_operacion == 'COMPRA' %}text-primary{% else %}text-success{% endif %}">
+                            {{ factura.total_valor|currency }}
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

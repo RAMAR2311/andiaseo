@@ -47,7 +47,24 @@ def encode_file_for_openai(file_bytes: bytes, filename: str):
         except Exception:
             pass
         
-        # Si no tiene texto o falló, podemos retornar que es PDF binario o no legible por texto
+        # Si no tiene texto seleccionable (PDF escaneado/imagen), renderizamos la primera página a imagen
+        try:
+            import pypdfium2 as pdfium
+            pdf = pdfium.PdfDocument(file_bytes)
+            if len(pdf) > 0:
+                first_page = pdf[0]
+                # Renderizar a 150 DPI para buena legibilidad visual en IA
+                pil_image = first_page.render(scale=2.0).to_pil()
+                img_byte_arr = io.BytesIO()
+                pil_image.save(img_byte_arr, format='JPEG', quality=85)
+                b64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+                return {
+                    "type": "image",
+                    "url": f"data:image/jpeg;base64,{b64}"
+                }
+        except Exception as e:
+            print("Error renderizando PDF a imagen:", e)
+        
         return {
             "type": "pdf_raw",
             "content": f"Documento PDF ({filename}) sin capa de texto seleccionable directa."

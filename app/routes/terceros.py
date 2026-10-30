@@ -157,3 +157,4 @@ def editar_tercero(id):
         return redirect(url_for('terceros_bp.detalle_tercero', id=tercero.id))
 
     return render_template('terceros/form.html', tercero=tercero, tipo_sugerido=tercero.tipo)
+

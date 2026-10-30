@@ -21,6 +21,7 @@
 
             <div class="card-body p-4">
                 <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="tipo_operacion" value="{{ tipo_operacion }}">
 
                     <!-- Selector de Tipo de Operación -->

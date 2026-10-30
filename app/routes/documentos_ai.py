@@ -1,13 +1,18 @@
+import os
 import json
 from decimal import Decimal
 from datetime import datetime, date, timedelta
+from pathlib import Path
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_required, current_user
-from app.models import db, Producto, PresentacionComercial, Lote, MovimientoKardex, Categoria
+from werkzeug.utils import secure_filename
+from app.models import db, Producto, PresentacionComercial, Lote, MovimientoKardex, Categoria, Tercero
 from app.routes.auth import role_required
 from app.services.ai_service import analizar_factura_con_ai
 from app.services.kardex_service import registrar_movimiento
 from app.services.fefo_service import sugerir_lote_fefo, validar_salida_lote
+
+basedir = Path(__file__).resolve().parent.parent.parent
 
 documentos_ai_bp = Blueprint('documentos_ai_bp', __name__)
 
@@ -40,7 +45,18 @@ def subir_documento():
 
         try:
             file_bytes = file.read()
+
+            # Guardar físicamente el archivo comprobante
+            ext = file.filename.rsplit('.', 1)[-1].lower()
+            prefijo = "COMP_AI_ENT" if tipo_op == 'compra' else "COMP_AI_DESP"
+            nombre_guardado = f"{prefijo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secure_filename(file.filename)}"
+            upload_dir = os.path.join(basedir, 'app', 'static', 'uploads')
+            os.makedirs(upload_dir, exist_ok=True)
+            with open(os.path.join(upload_dir, nombre_guardado), 'wb') as f_dest:
+                f_dest.write(file_bytes)
+
             resultado_ai = analizar_factura_con_ai(file_bytes, file.filename, tipo_operacion=tipo_op)
+            resultado_ai['archivo_guardado'] = nombre_guardado
             
             # Guardamos el resultado temporal en la sesión para la revisión
             session['ai_factura_data'] = resultado_ai
@@ -67,10 +83,26 @@ def revisar_documento():
 
     tipo_operacion = factura_data.get('tipo_operacion', 'compra')
     items = factura_data.get('items', [])
+    archivo_guardado = factura_data.get('archivo_guardado')
 
     # Obtener catálogo activo para vincular en selects
     productos = Producto.query.filter_by(activo=True).order_by(Producto.nombre.asc()).all()
     presentaciones = PresentacionComercial.query.filter_by(activo=True).all()
+    
+    # Obtener terceros según el tipo de operación
+    if tipo_operacion == 'compra':
+        terceros = Tercero.query.filter(Tercero.tipo.in_(['proveedor', 'ambos']), Tercero.activo == True).order_by(Tercero.nombre_razon_social.asc()).all()
+    else:
+        terceros = Tercero.query.filter(Tercero.tipo.in_(['cliente', 'ambos']), Tercero.activo == True).order_by(Tercero.nombre_razon_social.asc()).all()
+
+    # Pre-emparejar tercero extraído por IA con la BD
+    tercero_ia = (factura_data.get('tercero') or '').strip()
+    match_tercero_id = None
+    if tercero_ia:
+        for t in terceros:
+            if t.nombre_razon_social.lower() in tercero_ia.lower() or tercero_ia.lower() in t.nombre_razon_social.lower():
+                match_tercero_id = t.id
+                break
     
     # Pre-emparejar ítems con productos en base de datos si coinciden nombre o código
     items_procesados = []
@@ -107,7 +139,8 @@ def revisar_documento():
             return redirect(url_for('inventory_bp.list_productos'))
 
         numero_factura = request.form.get('numero_factura', '').strip() or 'FAC-SIN-NUMERO'
-        tercero = request.form.get('tercero', '').strip()
+        tercero_id = request.form.get('tercero_id', type=int)
+        tercero_texto = request.form.get('tercero', '').strip()
         observaciones_gral = request.form.get('observaciones', '').strip()
         
         cant_procesados = 0
@@ -141,6 +174,25 @@ def revisar_documento():
                     else:
                         f_venc = date.today() + timedelta(days=365)
 
+                    # Actualizar costo promedio ponderado si viene costo
+                    if costo_u > 0:
+                        if pres_id:
+                            pres_obj = db.session.get(PresentacionComercial, pres_id)
+                            if pres_obj:
+                                stock_act = float(pres_obj.stock_actual or 0)
+                                costo_act = float(pres_obj.costo_promedio_unitario or 0)
+                                nuevo_stock = stock_act + cant
+                                if nuevo_stock > 0:
+                                    costo_ponderado = ((stock_act * costo_act) + (cant * costo_u)) / nuevo_stock
+                                    pres_obj.costo_promedio_unitario = Decimal(str(round(costo_ponderado, 2)))
+                        else:
+                            stock_act = float(prod.stock_actual_total or 0)
+                            costo_act = float(prod.costo_unitario_base or 0)
+                            nuevo_stock = stock_act + cant
+                            if nuevo_stock > 0:
+                                costo_ponderado = ((stock_act * costo_act) + (cant * costo_u)) / nuevo_stock
+                                prod.costo_unitario_base = Decimal(str(round(costo_ponderado, 2)))
+
                     # Buscar o crear Lote
                     lote = Lote.query.filter_by(numero_lote=num_lote, producto_id=prod.id).first()
                     if not lote:
@@ -158,7 +210,7 @@ def revisar_documento():
                         db.session.flush()
 
                     # Registrar movimiento de entrada en Kardex
-                    motivo = f"Entrada por Factura IA de {tercero or 'Proveedor'}. {observaciones_gral}".strip()
+                    motivo = f"Entrada por Factura IA de {tercero_texto or 'Proveedor'}. {observaciones_gral}".strip()
                     registrar_movimiento(
                         usuario_id=current_user.id,
                         producto_id=prod.id,
@@ -168,6 +220,8 @@ def revisar_documento():
                         presentacion_id=pres_id,
                         lote_id=lote.id,
                         documento_soporte=numero_factura,
+                        archivo_comprobante=archivo_guardado,
+                        tercero_id=tercero_id,
                         commit=False
                     )
                     cant_procesados += 1
@@ -182,7 +236,7 @@ def revisar_documento():
 
                     lote_salida_id = lote_obj.id if lote_obj else None
 
-                    motivo = f"Despacho por Factura de Venta IA a {tercero or 'Cliente'}. {observaciones_gral}".strip()
+                    motivo = f"Despacho por Factura de Venta IA a {tercero_texto or 'Cliente'}. {observaciones_gral}".strip()
                     registrar_movimiento(
                         usuario_id=current_user.id,
                         producto_id=prod.id,
@@ -192,6 +246,8 @@ def revisar_documento():
                         presentacion_id=pres_id,
                         lote_id=lote_salida_id,
                         documento_soporte=numero_factura,
+                        archivo_comprobante=archivo_guardado,
+                        tercero_id=tercero_id,
                         commit=False
                     )
                     cant_procesados += 1
@@ -211,6 +267,8 @@ def revisar_documento():
         items_procesados=items_procesados,
         productos=productos,
         presentaciones=presentaciones,
+        terceros=terceros,
+        match_tercero_id=match_tercero_id,
         tipo_operacion=tipo_operacion
     )
 

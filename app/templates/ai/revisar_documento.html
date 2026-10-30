@@ -19,6 +19,7 @@
         </div>
 
         <form method="POST" action="{{ url_for('documentos_ai_bp.revisar_documento') }}" id="reviewForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="card-body p-4">
                 <!-- Metadatos de la Factura -->
                 <div class="row g-3 mb-4 p-3 bg-light rounded border">
@@ -31,12 +32,34 @@
                         <input type="date" name="fecha_factura" class="form-control" value="{{ factura.fecha or '' }}">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label fw-bold">{% if tipo_operacion == 'compra' %}Proveedor:{% else %}Cliente:{% endif %}</label>
-                        <input type="text" name="tercero" class="form-control" value="{{ factura.tercero or '' }}">
+                        <label class="form-label fw-bold">
+                            {% if tipo_operacion == 'compra' %}
+                            <i class="fa-solid fa-truck-field me-1 text-primary"></i>Proveedor Vinculado:
+                            {% else %}
+                            <i class="fa-solid fa-user-check me-1 text-primary"></i>Cliente Vinculado:
+                            {% endif %}
+                        </label>
+                        <select name="tercero_id" class="form-select">
+                            <option value="">-- Seleccionar de la BD --</option>
+                            {% for t in terceros %}
+                            <option value="{{ t.id }}" {% if match_tercero_id == t.id %}selected{% endif %}>
+                                {{ t.nombre_razon_social }} (NIT: {{ t.documento_nit }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" name="tercero" value="{{ factura.tercero or '' }}">
+                        <small class="text-muted d-block mt-1">Detectado: <strong>{{ factura.tercero or 'No identificado' }}</strong></small>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">Observaciones Generales:</label>
                         <input type="text" name="observaciones" class="form-control" value="{{ factura.observaciones or '' }}">
+                        {% if factura.archivo_guardado %}
+                        <div class="mt-1">
+                            <a href="{{ url_for('static', filename='uploads/' + factura.archivo_guardado) }}" target="_blank" class="small text-decoration-none">
+                                <i class="fa-solid fa-paperclip me-1"></i>Ver Documento Subido
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 

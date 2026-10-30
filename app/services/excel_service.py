@@ -163,8 +163,8 @@ def generar_inventario_valorizado_excel(productos):
     ws['A1'].font = title_font
     ws['A1'].alignment = Alignment(vertical='center')
 
-    ws.merge_cells('A2:H2')
-    ws['A2'] = f"Corte a fecha: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} | Costeo Promedio Ponderado"
+    ws.merge_cells('A2:J2')
+    ws['A2'] = f"Corte a fecha: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} | Costeo Promedio Ponderado con Discriminación de IVA (19%)"
     ws['A2'].font = subtitle_font
     ws['A2'].alignment = Alignment(vertical='center')
 
@@ -172,12 +172,14 @@ def generar_inventario_valorizado_excel(productos):
     headers = [
         "Código Ref.",
         "Categoría",
-        "Producto",
+        "Producto / Químico",
         "Tipo",
         "Presentación Comercial",
         "Stock Físico",
-        "Costo Unitario ($)",
-        "Valorización Total ($)"
+        "Costo Unit. Compra ($)",
+        "Subtotal Compra ($)",
+        "IVA 19% ($)",
+        "Total con IVA ($)"
     ]
 
     for col_num, h_text in enumerate(headers, 1):
@@ -187,7 +189,7 @@ def generar_inventario_valorizado_excel(productos):
     ws.row_dimensions[fila_header].height = 26
 
     fila_actual = fila_header + 1
-    total_general = 0.0
+    total_subtotal_gen = 0.0
 
     for prod in productos:
         cat_nombre = prod.categoria.nombre if prod.categoria else "Sin categoría"
@@ -197,8 +199,10 @@ def generar_inventario_valorizado_excel(productos):
             for p in prod.presentaciones:
                 stock_f = float(p.stock_actual or 0)
                 costo_u = float(p.costo_promedio_unitario or 0)
-                valor_f = stock_f * costo_u
-                total_general += valor_f
+                subtotal_f = stock_f * costo_u
+                iva_f = subtotal_f * 0.19
+                total_f = subtotal_f + iva_f
+                total_subtotal_gen += subtotal_f
 
                 fila_datos = [
                     (prod.codigo_referencia, regular_font, Alignment(horizontal="center")),
@@ -208,23 +212,27 @@ def generar_inventario_valorizado_excel(productos):
                     (p.nombre_presentacion, regular_font, Alignment(horizontal="left")),
                     (stock_f, regular_font, Alignment(horizontal="right")),
                     (costo_u, regular_font, Alignment(horizontal="right")),
-                    (valor_f, bold_font, Alignment(horizontal="right"))
+                    (subtotal_f, regular_font, Alignment(horizontal="right")),
+                    (iva_f, regular_font, Alignment(horizontal="right")),
+                    (total_f, bold_font, Alignment(horizontal="right"))
                 ]
 
                 ws.row_dimensions[fila_actual].height = 20
                 for col_num, (valor, f_style, a_style) in enumerate(fila_datos, 1):
                     c = ws.cell(row=fila_actual, column=col_num, value=valor)
                     aplicar_estilos_celda(c, font=f_style, alignment=a_style, border=thin_border)
-                    if col_num in (6,):
+                    if col_num == 6:
                         c.number_format = '#,##0.00'
-                    elif col_num in (7, 8):
+                    elif col_num in (7, 8, 9, 10):
                         c.number_format = '$#,##0.00'
                 fila_actual += 1
         else:
             # Producto a granel o insumo sin presentaciones
             stock_f = float(prod.stock_actual_total or 0)
             costo_u = 0.0
-            valor_f = 0.0
+            subtotal_f = 0.0
+            iva_f = 0.0
+            total_f = 0.0
 
             fila_datos = [
                 (prod.codigo_referencia, regular_font, Alignment(horizontal="center")),
@@ -234,7 +242,9 @@ def generar_inventario_valorizado_excel(productos):
                 (f"Granel ({prod.unidad_legible})", regular_font, Alignment(horizontal="left")),
                 (stock_f, regular_font, Alignment(horizontal="right")),
                 (costo_u, regular_font, Alignment(horizontal="right")),
-                (valor_f, bold_font, Alignment(horizontal="right"))
+                (subtotal_f, regular_font, Alignment(horizontal="right")),
+                (iva_f, regular_font, Alignment(horizontal="right")),
+                (total_f, bold_font, Alignment(horizontal="right"))
             ]
             ws.row_dimensions[fila_actual].height = 20
             for col_num, (valor, f_style, a_style) in enumerate(fila_datos, 1):
@@ -242,23 +252,36 @@ def generar_inventario_valorizado_excel(productos):
                 aplicar_estilos_celda(c, font=f_style, alignment=a_style, border=thin_border)
                 if col_num == 6:
                     c.number_format = '#,##0.00'
-                elif col_num in (7, 8):
+                elif col_num in (7, 8, 9, 10):
                     c.number_format = '$#,##0.00'
             fila_actual += 1
 
-    # Fila de Total General
+    # Fila de Totales Generales
+    total_iva_gen = total_subtotal_gen * 0.19
+    total_con_iva_gen = total_subtotal_gen + total_iva_gen
+
     ws.merge_cells(start_row=fila_actual, start_column=1, end_row=fila_actual, end_column=7)
-    tot_label = ws.cell(row=fila_actual, column=1, value="VALORIZACIÓN TOTAL DEL INVENTARIO:")
+    tot_label = ws.cell(row=fila_actual, column=1, value="TOTALES CONSOLIDADOS:")
     tot_label.alignment = Alignment(horizontal="right", vertical="center")
-    tot_label.font = Font(name="Calibri", size=11, bold=True, color="0F766E")
-    
-    tot_val = ws.cell(row=fila_actual, column=8, value=total_general)
+    tot_label.font = Font(name="Calibri", size=11, bold=True, color="1450A8")
+
+    c_sub = ws.cell(row=fila_actual, column=8, value=total_subtotal_gen)
+    c_sub.number_format = '$#,##0.00'
+    c_sub.font = Font(name="Calibri", size=11, bold=True)
+    c_sub.alignment = Alignment(horizontal="right", vertical="center")
+
+    c_iva = ws.cell(row=fila_actual, column=9, value=total_iva_gen)
+    c_iva.number_format = '$#,##0.00'
+    c_iva.font = Font(name="Calibri", size=11, bold=True)
+    c_iva.alignment = Alignment(horizontal="right", vertical="center")
+
+    tot_val = ws.cell(row=fila_actual, column=10, value=total_con_iva_gen)
     tot_val.number_format = '$#,##0.00'
-    tot_val.font = Font(name="Calibri", size=12, bold=True, color="0F766E")
+    tot_val.font = Font(name="Calibri", size=12, bold=True, color="1450A8")
     tot_val.alignment = Alignment(horizontal="right", vertical="center")
     tot_val.fill = total_fill
     
-    for c_idx in range(1, 9):
+    for c_idx in range(1, 11):
         ws.cell(row=fila_actual, column=c_idx).border = thin_border
 
     ws.row_dimensions[fila_actual].height = 26

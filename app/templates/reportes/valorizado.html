@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Inventario Valorizado General{% endblock %}
+{% block title %}Inventario Valorizado General - ANDIASEO LTDA.{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <div>
         <h3 class="fw-bold text-dark mb-1">Balance de Inventario Valorizado</h3>
-        <p class="text-muted small mb-0">Valorización del stock físico basada en costo promedio ponderado de compra.</p>
+        <p class="text-muted small mb-0">Valorización financiera del stock físico: Subtotal de Compra, IVA discriminado y Total General.</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{{ url_for('reportes_bp.exportar_valorizado') }}" class="btn btn-outline-success shadow-sm d-inline-flex align-items-center gap-2">
@@ -15,21 +15,57 @@
     </div>
 </div>
 
-<!-- Tarjeta de Gran Total Valorizado -->
-<div class="card border-0 shadow-sm mb-4 bg-teal bg-opacity-10 border-start border-4 border-teal">
-    <div class="card-body p-4 d-flex justify-content-between align-items-center">
-        <div>
-            <span class="text-teal text-uppercase fw-bold small">Valorización Total Consolidada</span>
-            <h2 class="fw-bold text-dark mb-0">{{ total_valor|currency }}</h2>
+<!-- Tarjetas de Resumen Financiero: Subtotal, IVA y Total -->
+<div class="row g-3 mb-4">
+    <!-- Subtotal Base de Compra -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 h-100" style="border-left: 4px solid var(--color-primary) !important;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-bold text-uppercase">Subtotal Base Compra</span>
+                <div class="p-2 bg-primary bg-opacity-10 text-primary rounded">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold text-dark mb-0">{{ total_subtotal|currency }}</h3>
+            <small class="text-muted">Costo promedio unitario × existencias</small>
         </div>
-        <div class="p-3 bg-white rounded-circle shadow-sm text-teal">
-            <i class="fa-solid fa-coins fa-2x"></i>
+    </div>
+
+    <!-- IVA Discriminado (19%) -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 h-100" style="border-left: 4px solid var(--color-gold) !important;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-bold text-uppercase">IVA Estimado (19%)</span>
+                <div class="p-2 bg-warning bg-opacity-10 text-warning rounded">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold text-dark mb-0">{{ total_iva|currency }}</h3>
+            <small class="text-muted">Impuesto sobre las compras de inventario</small>
+        </div>
+    </div>
+
+    <!-- Total General Valorizado -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm p-3 h-100 bg-primary text-white" style="background: linear-gradient(135deg, #1450A8 0%, #0d3875 100%) !important;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-white-50 small fw-bold text-uppercase">Total Valorizado (Con IVA)</span>
+                <div class="p-2 bg-white bg-opacity-20 rounded text-warning">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold text-white mb-0">{{ total_con_iva|currency }}</h3>
+            <small class="text-white-50">Subtotal de compra + IVA 19%</small>
         </div>
     </div>
 </div>
 
-<!-- Tabla Detallada -->
+<!-- Tabla Detallada con desglose de Valor de Compra, IVA y Subtotal -->
 <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0"><i class="fa-solid fa-table-list text-primary me-2"></i>Desglose Financiero por Referencia y Presentación</h5>
+        <span class="badge bg-light text-dark border">Tarifa General IVA: 19%</span>
+    </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 datatable-custom">
@@ -37,44 +73,61 @@
                     <tr>
                         <th class="ps-3">Código Ref.</th>
                         <th>Categoría</th>
-                        <th>Producto / Químico</th>
-                        <th>Presentación Comercial</th>
+                        <th>Producto / Insumo</th>
+                        <th>Presentación</th>
                         <th class="text-end">Stock Físico</th>
-                        <th class="text-end">Costo Promedio Unitario</th>
-                        <th class="text-end pe-3">Valorización Total</th>
+                        <th class="text-end">Costo Unit. Compra</th>
+                        <th class="text-end">Subtotal Compra</th>
+                        <th class="text-end">IVA (19%)</th>
+                        <th class="text-end pe-3">Total con IVA</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in productos %}
                         {% if p.presentaciones %}
                             {% for pres in p.presentaciones %}
+                            {% set subtotal_item = (pres.stock_actual|float or 0.0) * (pres.costo_promedio_unitario|float or 0.0) %}
+                            {% set iva_item = subtotal_item * 0.19 %}
+                            {% set total_item = subtotal_item + iva_item %}
                             <tr>
-                                <td class="ps-3 font-monospace text-muted">{{ p.codigo_referencia }}</td>
+                                <td class="ps-3 font-monospace text-muted small fw-bold">{{ p.codigo_referencia }}</td>
                                 <td><span class="badge bg-light text-dark border">{{ p.categoria.nombre }}</span></td>
                                 <td class="fw-semibold text-dark">{{ p.nombre }}</td>
                                 <td>{{ pres.nombre_presentacion }}</td>
                                 <td class="text-end">
-                                    <span class="fw-bold text-teal">{{ pres.stock_actual|number(0) }}</span> und
+                                    <span class="fw-bold text-primary">{{ pres.stock_actual|number(0) }}</span> und
                                 </td>
                                 <td class="text-end">{{ pres.costo_promedio_unitario|currency }}</td>
-                                <td class="text-end pe-3 fw-bold text-dark">{{ pres.valor_inventario|currency }}</td>
+                                <td class="text-end fw-semibold text-dark">{{ subtotal_item|currency }}</td>
+                                <td class="text-end text-muted">{{ iva_item|currency }}</td>
+                                <td class="text-end pe-3 fw-bold text-primary">{{ total_item|currency }}</td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td class="ps-3 font-monospace text-muted">{{ p.codigo_referencia }}</td>
+                                <td class="ps-3 font-monospace text-muted small fw-bold">{{ p.codigo_referencia }}</td>
                                 <td><span class="badge bg-light text-dark border">{{ p.categoria.nombre }}</span></td>
                                 <td class="fw-semibold text-dark">{{ p.nombre }}</td>
-                                <td class="text-muted fst-italic">Granel Base ({{ p.unidad_legible }})</td>
+                                <td class="text-muted fst-italic">Granel ({{ p.unidad_legible }})</td>
                                 <td class="text-end">
-                                    <span class="fw-bold text-teal">{{ p.stock_actual_total|number }}</span> {{ p.unidad_legible }}
+                                    <span class="fw-bold text-primary">{{ p.stock_actual_total|number }}</span> {{ p.unidad_legible }}
                                 </td>
                                 <td class="text-end">$ 0.00</td>
-                                <td class="text-end pe-3 fw-bold text-dark">$ 0.00</td>
+                                <td class="text-end fw-semibold text-dark">$ 0.00</td>
+                                <td class="text-end text-muted">$ 0.00</td>
+                                <td class="text-end pe-3 fw-bold text-primary">$ 0.00</td>
                             </tr>
                         {% endif %}
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td colspan="6" class="text-end ps-3">TOTALES GENERALES:</td>
+                        <td class="text-end text-dark">{{ total_subtotal|currency }}</td>
+                        <td class="text-end text-warning">{{ total_iva|currency }}</td>
+                        <td class="text-end pe-3 text-primary fs-6">{{ total_con_iva|currency }}</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>

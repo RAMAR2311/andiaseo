@@ -105,15 +105,29 @@ def exportar_kardex():
 @reportes_bp.route('/valorizado')
 @login_required
 def inventario_valorizado():
-    """Vista del Inventario General Valorizado con costo promedio y totales."""
+    """Vista del Inventario General Valorizado con costo de compra, IVA (19%) y subtotal."""
     productos = Producto.query.filter_by(activo=True).order_by(Producto.nombre.asc()).all()
     
-    total_valor = sum(float(p.valor_total_inventario) for p in productos)
-    
+    total_subtotal = 0.0
+    for p in productos:
+        if p.presentaciones:
+            for pres in p.presentaciones:
+                stock_f = float(pres.stock_actual or 0)
+                costo_u = float(pres.costo_promedio_unitario or 0)
+                total_subtotal += (stock_f * costo_u)
+        else:
+            # Productos directos sin presentación comercial
+            total_subtotal += 0.0
+
+    total_iva = total_subtotal * 0.19
+    total_con_iva = total_subtotal + total_iva
+
     return render_template(
         'reportes/valorizado.html',
         productos=productos,
-        total_valor=total_valor
+        total_subtotal=total_subtotal,
+        total_iva=total_iva,
+        total_con_iva=total_con_iva
     )
 
 

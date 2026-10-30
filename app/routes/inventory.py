@@ -63,6 +63,11 @@ def nuevo_producto():
         unidad_base = request.form.get('unidad_base', 'litros')
         stock_minimo = request.form.get('stock_minimo_alerta', type=float) or 0.0
         descripcion = request.form.get('descripcion', '').strip()
+        
+        # Cantidad y lote inicial opcional (Saldo de Apertura)
+        cantidad_inicial = request.form.get('cantidad_inicial', type=float) or 0.0
+        numero_lote_inicial = request.form.get('numero_lote_inicial', '').strip().upper()
+        fecha_venc_inicial_str = request.form.get('fecha_vencimiento_inicial', '').strip()
 
         if not codigo or not nombre or not categoria_id:
             flash('Código, nombre y categoría son obligatorios.', 'danger')
@@ -84,9 +89,53 @@ def nuevo_producto():
             activo=True
         )
         db.session.add(producto)
+        db.session.flush()
+
+        # Si ingresó stock inicial, registrar lote y movimiento Kardex
+        if cantidad_inicial > 0:
+            if not numero_lote_inicial:
+                numero_lote_inicial = f"LOT-INI-{datetime.now().strftime('%y%m%d')}"
+            
+            if fecha_venc_inicial_str:
+                try:
+                    f_venc = datetime.strptime(fecha_venc_inicial_str, '%Y-%m-%d').date()
+                except Exception:
+                    f_venc = date.today().replace(year=date.today().year + 1)
+            else:
+                f_venc = date.today().replace(year=date.today().year + 1)
+
+            lote_ini = Lote(
+                producto_id=producto.id,
+                presentacion_id=None,
+                numero_lote=numero_lote_inicial,
+                fecha_produccion=date.today(),
+                fecha_vencimiento=f_venc,
+                cantidad_inicial=Decimal(str(cantidad_inicial)),
+                cantidad_actual=Decimal('0.0'),
+                estado='ACTIVO'
+            )
+            db.session.add(lote_ini)
+            db.session.flush()
+
+            registrar_movimiento(
+                usuario_id=current_user.id,
+                producto_id=producto.id,
+                tipo_movimiento='ENTRADA_COMPRA',
+                cantidad=Decimal(str(cantidad_inicial)),
+                motivo_observaciones="Saldo inicial de apertura al registrar producto",
+                presentacion_id=None,
+                lote_id=lote_ini.id,
+                documento_soporte="SALDO-INICIAL",
+                commit=False
+            )
+
         db.session.commit()
 
-        flash(f'Producto "{producto.nombre}" registrado exitosamente. Ahora puedes configurar sus presentaciones.', 'success')
+        if cantidad_inicial > 0:
+            flash(f'Producto "{producto.nombre}" registrado exitosamente con saldo inicial de {cantidad_inicial} {producto.unidad_base} (Lote: {numero_lote_inicial}).', 'success')
+        else:
+            flash(f'Producto "{producto.nombre}" registrado exitosamente con saldo en 0. Puedes ingresar stock por Entrada de Compra o configurar presentaciones.', 'success')
+        
         return redirect(url_for('inventory_bp.presentaciones', producto_id=producto.id))
 
     categorias = Categoria.query.order_by(Categoria.nombre.asc()).all()

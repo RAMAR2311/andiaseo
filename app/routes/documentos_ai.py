@@ -222,6 +222,7 @@ def revisar_documento():
                         documento_soporte=numero_factura,
                         archivo_comprobante=archivo_guardado,
                         tercero_id=tercero_id,
+                        precio_unitario=costo_u if costo_u > 0 else None,
                         commit=False
                     )
                     cant_procesados += 1
@@ -236,6 +237,16 @@ def revisar_documento():
 
                     lote_salida_id = lote_obj.id if lote_obj else None
 
+                    # Determinar precio de venta
+                    precio_venta_u = costo_u if costo_u > 0 else None
+                    if not precio_venta_u:
+                        if pres_id:
+                            pres_tmp = db.session.get(PresentacionComercial, pres_id)
+                            if pres_tmp and pres_tmp.precio_referencia:
+                                precio_venta_u = float(pres_tmp.precio_referencia)
+                        elif prod.precio_venta_base:
+                            precio_venta_u = float(prod.precio_venta_base)
+
                     motivo = f"Despacho por Factura de Venta IA a {tercero_texto or 'Cliente'}. {observaciones_gral}".strip()
                     registrar_movimiento(
                         usuario_id=current_user.id,
@@ -248,6 +259,7 @@ def revisar_documento():
                         documento_soporte=numero_factura,
                         archivo_comprobante=archivo_guardado,
                         tercero_id=tercero_id,
+                        precio_unitario=precio_venta_u,
                         commit=False
                     )
                     cant_procesados += 1

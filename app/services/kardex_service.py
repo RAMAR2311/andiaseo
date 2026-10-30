@@ -13,6 +13,7 @@ def registrar_movimiento(
     tercero_id=None,
     documento_soporte=None,
     archivo_comprobante=None,
+    precio_unitario=None,
     commit=True
 ):
     """
@@ -83,6 +84,24 @@ def registrar_movimiento(
         elif lote.estado == 'AGOTADO' and lote.cantidad_actual > 0:
             lote.estado = 'ACTIVO'
 
+    # Calcular precio_unitario por defecto si no se proporcionó
+    precio_dec = Decimal('0.0')
+    if precio_unitario is not None:
+        precio_dec = Decimal(str(precio_unitario))
+    else:
+        if tipo_movimiento == 'SALIDA_DESPACHO':
+            # Tomar precio de referencia (venta) de la presentación o del producto
+            if presentacion and presentacion.precio_referencia:
+                precio_dec = Decimal(str(presentacion.precio_referencia))
+            elif producto.precio_venta_base:
+                precio_dec = Decimal(str(producto.precio_venta_base))
+        elif tipo_movimiento == 'ENTRADA_COMPRA':
+            # Tomar costo unitario de la presentación o del producto
+            if presentacion and presentacion.costo_promedio_unitario:
+                precio_dec = Decimal(str(presentacion.costo_promedio_unitario))
+            elif producto.costo_unitario_base:
+                precio_dec = Decimal(str(producto.costo_unitario_base))
+
     # Crear el registro histórico del Kardex
     movimiento = MovimientoKardex(
         fecha=datetime.utcnow(),
@@ -93,6 +112,7 @@ def registrar_movimiento(
         tercero_id=tercero_id,
         tipo_movimiento=tipo_movimiento,
         cantidad=cantidad_dec,
+        precio_unitario=precio_dec,
         stock_anterior=stock_anterior,
         stock_nuevo=stock_nuevo,
         motivo_observaciones=motivo_observaciones.strip(),

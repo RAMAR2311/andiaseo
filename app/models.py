@@ -117,6 +117,7 @@ class Producto(db.Model):
     stock_minimo_alerta = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     stock_actual_total = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     costo_unitario_base = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
+    precio_venta_base = db.Column(db.Numeric(12, 2), nullable=False, default=0.0) # Precio de venta al público en unidad base
     requiere_vencimiento = db.Column(db.Boolean, default=True, nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
@@ -346,6 +347,7 @@ class MovimientoKardex(db.Model):
     tercero_id = db.Column(db.Integer, db.ForeignKey('tercero.id'), nullable=True)
     tipo_movimiento = db.Column(db.String(40), nullable=False, index=True)
     cantidad = db.Column(db.Numeric(12, 2), nullable=False)  # Puede ser positivo (ingreso) o negativo (salida)
+    precio_unitario = db.Column(db.Numeric(12, 2), nullable=False, default=0.0) # Precio unitario de venta o costo
     stock_anterior = db.Column(db.Numeric(12, 2), nullable=False)
     stock_nuevo = db.Column(db.Numeric(12, 2), nullable=False)
     motivo_observaciones = db.Column(db.Text, nullable=False)

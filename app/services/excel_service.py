@@ -66,6 +66,7 @@ def generar_kardex_excel(movimientos, parametros_filtro=None):
         "Presentación",
         "Lote",
         "Cant. Mov.",
+        "Precio / Costo Unit.",
         "Stock Nuevo",
         "Doc. Soporte",
         "Usuario",
@@ -88,6 +89,7 @@ def generar_kardex_excel(movimientos, parametros_filtro=None):
         usr_str = m.usuario.nombre if m.usuario else "N/A"
         
         cant_val = float(m.cantidad or 0)
+        precio_val = float(m.precio_unitario or 0)
         stock_nuevo_val = float(m.stock_nuevo or 0)
 
         # Colorear según ingreso o salida
@@ -101,6 +103,7 @@ def generar_kardex_excel(movimientos, parametros_filtro=None):
             (pres_str, regular_font, Alignment(horizontal="left")),
             (lote_str, regular_font, Alignment(horizontal="center")),
             (cant_val, cant_font, Alignment(horizontal="right")),
+            (precio_val, regular_font, Alignment(horizontal="right")),
             (stock_nuevo_val, bold_font, Alignment(horizontal="right")),
             (m.documento_soporte or "-", regular_font, Alignment(horizontal="center")),
             (usr_str, regular_font, Alignment(horizontal="left")),

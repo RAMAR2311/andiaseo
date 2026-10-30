@@ -65,6 +65,7 @@ def nuevo_producto():
         tipo_producto = request.form.get('tipo_producto', 'quimico_liquido')
         unidad_base = request.form.get('unidad_base', 'litros')
         stock_minimo = request.form.get('stock_minimo_alerta', type=float) or 0.0
+        precio_venta_base = request.form.get('precio_venta_base', type=float) or 0.0
         descripcion = request.form.get('descripcion', '').strip()
         requiere_vencimiento = bool(request.form.get('requiere_vencimiento'))
         
@@ -88,6 +89,7 @@ def nuevo_producto():
             tipo_producto=tipo_producto,
             unidad_base=unidad_base,
             stock_minimo_alerta=Decimal(str(stock_minimo)),
+            precio_venta_base=Decimal(str(precio_venta_base)),
             stock_actual_total=Decimal('0.0'),
             costo_unitario_base=Decimal('0.0'),
             requiere_vencimiento=requiere_vencimiento,
@@ -164,6 +166,7 @@ def editar_producto(id):
         tipo_producto = request.form.get('tipo_producto')
         unidad_base = request.form.get('unidad_base')
         stock_minimo = request.form.get('stock_minimo_alerta', type=float) or 0.0
+        precio_venta_base = request.form.get('precio_venta_base', type=float) or 0.0
         descripcion = request.form.get('descripcion', '').strip()
 
         # Verificar unicidad de código
@@ -178,6 +181,7 @@ def editar_producto(id):
         producto.tipo_producto = tipo_producto
         producto.unidad_base = unidad_base
         producto.stock_minimo_alerta = Decimal(str(stock_minimo))
+        producto.precio_venta_base = Decimal(str(precio_venta_base))
         producto.descripcion = descripcion
 
         db.session.commit()
@@ -392,6 +396,7 @@ def entrada_compra():
                     documento_soporte=factura_remision,
                     archivo_comprobante=nombre_archivo_guardado,
                     tercero_id=tercero_id,
+                    precio_unitario=costo_u if costo_u > 0 else None,
                     commit=False
                 )
                 cant_procesados += 1
@@ -424,6 +429,7 @@ def despacho():
 
         prod_ids = request.form.getlist('item_producto_id')
         cantidades = request.form.getlist('item_cantidad')
+        precios_venta = request.form.getlist('item_precio_venta')
 
         if not documento:
             flash('El número de remisión o factura de venta es obligatorio.', 'danger')
@@ -454,6 +460,7 @@ def despacho():
                 cant = float(cantidades[idx]) if idx < len(cantidades) and cantidades[idx] else 0.0
                 pres_id = request.form.get(f'item_presentacion_id_{idx}', type=int) or None
                 lote_id = request.form.get(f'item_lote_id_{idx}', type=int)
+                precio_u = float(precios_venta[idx]) if idx < len(precios_venta) and precios_venta[idx] else None
 
                 if cant <= 0 or not lote_id:
                     continue
@@ -476,6 +483,7 @@ def despacho():
                     documento_soporte=documento,
                     archivo_comprobante=nombre_archivo_guardado,
                     tercero_id=tercero_id,
+                    precio_unitario=precio_u,
                     commit=False
                 )
                 cant_procesados += 1
@@ -497,14 +505,15 @@ def despacho():
 @inventory_bp.route('/api/presentaciones/<int:producto_id>')
 @login_required
 def api_presentaciones(producto_id):
-    """API JSON para obtener presentaciones de un producto dinámicamente."""
+    """API JSON para obtener presentaciones de un producto dinámicamente con precios y costos."""
     pres = PresentacionComercial.query.filter_by(producto_id=producto_id, activo=True).all()
     return jsonify([{
         'id': p.id,
         'nombre': p.nombre_presentacion,
         'factor': float(p.factor_conversion_base),
         'stock': float(p.stock_actual),
-        'costo': float(p.costo_promedio_unitario)
+        'costo': float(p.costo_promedio_unitario or 0),
+        'precio_venta': float(p.precio_referencia or 0)
     } for p in pres])
 
 

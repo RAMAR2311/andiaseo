@@ -164,7 +164,7 @@
                         <th>Producto / Presentación</th>
                         <th>Lote</th>
                         <th class="text-end">Cantidad</th>
-                        <th class="text-end">Costo Unit.</th>
+                        <th class="text-end">Precio / Costo Unit.</th>
                         <th class="text-end pe-3">Total</th>
                     </tr>
                 </thead>
@@ -173,9 +173,9 @@
                     <tr>
                         <td class="ps-3">{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>
-                            {% if m.tipo == 'ENTRADA_COMPRA' %}
+                            {% if m.tipo_movimiento == 'ENTRADA_COMPRA' %}
                             <span class="badge bg-success-subtle text-success">Entrada Compra</span>
-                            {% elif m.tipo == 'SALIDA_VENTA' %}
+                            {% elif m.tipo_movimiento == 'SALIDA_DESPACHO' %}
                             <span class="badge bg-danger-subtle text-danger">Salida Despacho</span>
                             {% else %}
                             <span class="badge bg-secondary-subtle text-secondary">{{ m.tipo_legible }}</span>
@@ -183,13 +183,26 @@
                         </td>
                         <td class="font-monospace fw-bold">{{ m.documento_soporte or '-' }}</td>
                         <td>
-                            <div class="fw-semibold">{{ m.presentacion.producto.nombre }}</div>
-                            <div class="text-muted small">{{ m.presentacion.nombre }}</div>
+                            <div class="fw-semibold">{{ m.producto.nombre }}</div>
+                            <div class="text-muted small">
+                                {% if m.presentacion %}
+                                    {{ m.presentacion.nombre_presentacion }}
+                                {% else %}
+                                    Granel ({{ m.producto.unidad_legible }})
+                                {% endif %}
+                            </div>
                         </td>
                         <td class="font-monospace">{{ m.lote.numero_lote if m.lote else '-' }}</td>
-                        <td class="text-end fw-bold">{{ m.cantidad|number }} {{ m.presentacion.unidad_medida }}</td>
-                        <td class="text-end">{{ m.costo_unitario|currency }}</td>
-                        <td class="text-end pe-3 fw-bold">{{ (m.cantidad * m.costo_unitario)|currency }}</td>
+                        <td class="text-end fw-bold">
+                            <span class="{% if m.cantidad > 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if m.cantidad > 0 %}+{% endif %}{{ m.cantidad|number }}
+                            </span>
+                            <small class="text-muted">
+                                {% if m.presentacion %}und{% else %}{{ m.producto.unidad_base }}{% endif %}
+                            </small>
+                        </td>
+                        <td class="text-end">{{ (m.precio_unitario or 0)|currency }}</td>
+                        <td class="text-end pe-3 fw-bold">{{ (m.cantidad|abs * (m.precio_unitario or 0))|currency }}</td>
                     </tr>
                     {% else %}
                     <tr>

@@ -65,6 +65,7 @@
                         <th>Producto / Formato</th>
                         <th>Lote</th>
                         <th class="text-end">Cantidad</th>
+                        <th class="text-end">Precio / Costo Unit.</th>
                         <th class="text-end">Stock Previo</th>
                         <th class="text-end">Stock Nuevo</th>
                         <th>Doc. Soporte</th>
@@ -109,6 +110,13 @@
                             <strong class="{% if m.cantidad > 0 %}text-success{% else %}text-danger{% endif %}">
                                 {% if m.cantidad > 0 %}+{% endif %}{{ m.cantidad|number }}
                             </strong>
+                        </td>
+                        <td class="text-end fw-bold">
+                            {% if m.precio_unitario and m.precio_unitario > 0 %}
+                                {{ m.precio_unitario|currency }}
+                            {% else %}
+                                <span class="text-muted small">-</span>
+                            {% endif %}
                         </td>
                         <td class="text-end text-muted small">{{ m.stock_anterior|number }}</td>
                         <td class="text-end fw-bold">{{ m.stock_nuevo|number }}</td>

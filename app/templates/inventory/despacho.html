@@ -141,22 +141,31 @@
                     <table class="table table-bordered table-hover align-middle mb-0 table-items">
                         <thead>
                             <tr>
-                                <th style="width: 25%;">Producto / Químico</th>
-                                <th style="width: 20%;">Presentación Comercial</th>
-                                <th style="width: 32%;">Lote de Salida (Prioridad FEFO)</th>
-                                <th style="width: 15%;">Cant. Despachar</th>
-                                <th style="width: 8%;" class="text-center">Quitar</th>
+                                <th style="width: 22%;">Producto / Químico</th>
+                                <th style="width: 18%;">Presentación Comercial</th>
+                                <th style="width: 25%;">Lote de Salida (Prioridad FEFO)</th>
+                                <th style="width: 10%;">Cant.</th>
+                                <th style="width: 12%;">Precio Venta ($)</th>
+                                <th style="width: 13%;">Subtotal</th>
+                                <th style="width: 5%;" class="text-center">Quitar</th>
                             </tr>
                         </thead>
                         <tbody id="itemsTableBody">
                             <tr id="emptyRow">
-                                <td colspan="5" class="text-center py-5 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     <i class="fa-solid fa-boxes-packing fa-2x mb-2 text-secondary"></i>
                                     <div>Aún no has agregado ningún producto al despacho.</div>
                                     <small>Utiliza el buscador superior para agregar todos los productos que componen la factura o remisión.</small>
                                 </td>
                             </tr>
                         </tbody>
+                        <tfoot id="tableFootTotal" style="display: none;" class="table-light">
+                            <tr>
+                                <th colspan="5" class="text-end fw-bold">TOTAL VENTA / DESPACHO:</th>
+                                <th id="totalFacturaDisplay" class="text-success fw-bold fs-6">$ 0.00</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -181,17 +190,21 @@ const catalogoProductos = [
         codigo: "{{ p.codigo_referencia|e }}",
         nombre: "{{ p.nombre|e }}",
         unidad: "{{ p.unidad_legible|e }}",
-        stock: "{{ p.stock_actual_total }}"
+        stock: "{{ p.stock_actual_total }}",
+        precio_venta_base: {{ p.precio_venta_base|float }}
     }{% if not loop.last %},{% endif %}
     {% endfor %}
 ];
 
 let itemIndex = 0;
+const presentacionesMap = {}; // Guarda presentaciones cargadas por producto
 
 const smartInput = document.getElementById('smartInput');
 const dropdown = document.getElementById('dropdownResults');
 const tableBody = document.getElementById('itemsTableBody');
 const emptyRow = document.getElementById('emptyRow');
+const tableFootTotal = document.getElementById('tableFootTotal');
+const totalFacturaDisplay = document.getElementById('totalFacturaDisplay');
 const contadorItems = document.getElementById('contadorItems');
 const btnConfirmar = document.getElementById('btnConfirmarTodo');
 const btnVaciar = document.getElementById('btnVaciarTabla');
@@ -242,8 +255,8 @@ function agregarProductoATabla(p) {
             <small class="text-muted">Stock actual: ${p.stock} ${p.unidad}</small>
         </td>
         <td>
-            <select name="item_presentacion_id_${idx}" id="pres_${idx}" class="form-select form-select-sm" onchange="actualizarLotesFila(${idx}, ${p.id}, this.value)">
-                <option value="">A Granel / Sin Formato Específico</option>
+            <select name="item_presentacion_id_${idx}" id="pres_${idx}" class="form-select form-select-sm" onchange="onCambioPresentacion(${idx}, ${p.id}, this.value, ${p.precio_venta_base})">
+                <option value="" data-precio="${p.precio_venta_base}">A Granel / Unidad Base (${p.unidad})</option>
             </select>
         </td>
         <td>
@@ -252,7 +265,16 @@ function agregarProductoATabla(p) {
             </select>
         </td>
         <td>
-            <input type="number" step="0.01" min="0.01" name="item_cantidad" class="form-control form-control-sm text-center fw-bold" placeholder="0.00" required>
+            <input type="number" step="0.01" min="0.01" name="item_cantidad" id="cant_${idx}" class="form-control form-control-sm text-center fw-bold" placeholder="0.00" value="1.00" oninput="calcularSubtotalFila(${idx})" required>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">$</span>
+                <input type="number" step="0.01" min="0" name="item_precio_venta" id="precio_${idx}" class="form-control form-control-sm text-end fw-bold" value="${p.precio_venta_base.toFixed(2)}" oninput="calcularSubtotalFila(${idx})" required>
+            </div>
+        </td>
+        <td class="text-end fw-bold text-dark">
+            <span id="subtotal_${idx}">$ ${(p.precio_venta_base * 1.0).toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
         </td>
         <td class="text-center">
             <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarFila(${idx})">
@@ -267,18 +289,69 @@ function agregarProductoATabla(p) {
     fetch(`/inventario/api/presentaciones/${p.id}`)
         .then(res => res.json())
         .then(data => {
+            presentacionesMap[p.id] = data;
             const selectPres = document.getElementById(`pres_${idx}`);
             data.forEach(pr => {
                 const opt = document.createElement('option');
                 opt.value = pr.id;
-                opt.textContent = `${pr.nombre} (Stock: ${pr.stock} und)`;
+                opt.dataset.precio = pr.precio_venta || 0;
+                opt.textContent = `${pr.nombre} (Stock: ${pr.stock} und - $ ${Number(pr.precio_venta).toLocaleString('es-CO')})`;
                 selectPres.appendChild(opt);
             });
+            // Si hay presentaciones comerciales, pre-seleccionar la primera
+            if (data.length > 0) {
+                selectPres.value = data[0].id;
+                onCambioPresentacion(idx, p.id, data[0].id, p.precio_venta_base);
+            }
         });
 
     // Cargar lotes iniciales
     actualizarLotesFila(idx, p.id, null);
+    calcularSubtotalFila(idx);
     actualizarEstadoTabla();
+}
+
+function onCambioPresentacion(idx, prodId, presId, precioBaseProd) {
+    const inputPrecio = document.getElementById(`precio_${idx}`);
+    if (presId && presentacionesMap[prodId]) {
+        const presEncontrada = presentacionesMap[prodId].find(pr => String(pr.id) === String(presId));
+        if (presEncontrada && presEncontrada.precio_venta > 0) {
+            inputPrecio.value = Number(presEncontrada.precio_venta).toFixed(2);
+        } else {
+            inputPrecio.value = Number(precioBaseProd || 0).toFixed(2);
+        }
+    } else {
+        inputPrecio.value = Number(precioBaseProd || 0).toFixed(2);
+    }
+    actualizarLotesFila(idx, prodId, presId);
+    calcularSubtotalFila(idx);
+}
+
+function calcularSubtotalFila(idx) {
+    const cantInput = document.getElementById(`cant_${idx}`);
+    const precioInput = document.getElementById(`precio_${idx}`);
+    const subtotalSpan = document.getElementById(`subtotal_${idx}`);
+
+    if (cantInput && precioInput && subtotalSpan) {
+        const cant = parseFloat(cantInput.value) || 0;
+        const precio = parseFloat(precioInput.value) || 0;
+        const subtotal = cant * precio;
+        subtotalSpan.textContent = `$ ${subtotal.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
+    calcularTotalGeneral();
+}
+
+function calcularTotalGeneral() {
+    let total = 0;
+    const filas = tableBody.querySelectorAll('tr:not(#emptyRow)');
+    filas.forEach(fila => {
+        const cant = parseFloat(fila.querySelector('input[name="item_cantidad"]')?.value) || 0;
+        const precio = parseFloat(fila.querySelector('input[name="item_precio_venta"]')?.value) || 0;
+        total += (cant * precio);
+    });
+    if (totalFacturaDisplay) {
+        totalFacturaDisplay.textContent = `$ ${total.toLocaleString('es-CO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
 }
 
 function actualizarLotesFila(idx, prodId, presId) {
@@ -317,20 +390,23 @@ function actualizarEstadoTabla() {
     contadorItems.textContent = filas.length;
     if (filas.length === 0) {
         if (emptyRow) emptyRow.style.display = 'table-row';
+        if (tableFootTotal) tableFootTotal.style.display = 'none';
         btnConfirmar.disabled = true;
         btnVaciar.style.display = 'none';
     } else {
         if (emptyRow) emptyRow.style.display = 'none';
+        if (tableFootTotal) tableFootTotal.style.display = 'table-footer-group';
         btnConfirmar.disabled = false;
         btnVaciar.style.display = 'inline-block';
     }
+    calcularTotalGeneral();
 }
 
 btnVaciar.addEventListener('click', () => {
     if (confirm('¿Deseas vaciar todos los productos del despacho?')) {
         tableBody.innerHTML = `
             <tr id="emptyRow">
-                <td colspan="5" class="text-center py-5 text-muted">
+                <td colspan="7" class="text-center py-5 text-muted">
                     <i class="fa-solid fa-boxes-packing fa-2x mb-2 text-secondary"></i>
                     <div>Aún no has agregado ningún producto al despacho.</div>
                     <small>Utiliza el buscador superior para agregar todos los productos que componen la factura o remisión.</small>

@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Carga Masiva de Productos e Inventario{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-9">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <a href="{{ url_for('inventory_bp.list_productos') }}" class="btn btn-sm btn-outline-secondary mb-2">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Volver al Catálogo
+                </a>
+                <h3 class="fw-bold text-dark mb-1">
+                    <i class="fa-solid fa-file-excel text-success me-2"></i>Carga Masiva de Productos (Excel)
+                </h3>
+                <p class="text-muted small mb-0">Importa tus listados de compras o inventario en formato Excel (.xlsx, .xls) o CSV de forma automática.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('inventory_bp.descargar_plantilla_masiva') }}" class="btn btn-outline-primary shadow-sm">
+                    <i class="fa-solid fa-download me-1"></i> Descargar Plantilla Excel
+                </a>
+            </div>
+        </div>
+
+        <!-- Instrucciones y Guía de Columnas -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-0">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-circle-question text-primary me-2"></i>¿Cómo organizar tu archivo de Excel?
+                </h5>
+            </div>
+            <div class="card-body pt-0">
+                <p class="text-muted small">El sistema lee automáticamente las columnas de tu hoja de cálculo. Se aceptan los encabezados estándar o el orden de columnas:</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm small align-middle">
+                        <thead class="table-light">
+                            <tr class="text-center">
+                                <th>Columna A</th>
+                                <th>Columna B</th>
+                                <th>Columna C</th>
+                                <th>Columna D</th>
+                                <th>Columna E</th>
+                                <th>Columna F (Opcional)</th>
+                                <th>Columna G (Opcional)</th>
+                            </tr>
+                            <tr class="fw-bold">
+                                <td>CODIGO</td>
+                                <td>NOMBRE_PRODUCTO</td>
+                                <td>PROVEEDOR</td>
+                                <td>PRESENTACION_EMPAQUE</td>
+                                <td>CANTIDAD_STOCK</td>
+                                <td>COSTO_COMPRA</td>
+                                <td>PRECIO_VENTA</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-monospace text-teal fw-bold">COD011</td>
+                                <td>BAYETILLA BLANCA METRO</td>
+                                <td>IMPERIO</td>
+                                <td><span class="badge bg-secondary-subtle text-dark">UND</span></td>
+                                <td class="text-end">3</td>
+                                <td class="text-end">$ 7.742</td>
+                                <td class="text-end text-success fw-bold">$ 9.193</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace text-teal fw-bold">COD013</td>
+                                <td>BLANQUEADOR 5,25%</td>
+                                <td>ORION</td>
+                                <td><span class="badge bg-info-subtle text-info">CUÑETE</span></td>
+                                <td class="text-end">14</td>
+                                <td class="text-end">$ 32.836</td>
+                                <td class="text-end text-success fw-bold">$ 52.751</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace text-teal fw-bold">COD005</td>
+                                <td>AMBIENTADOR</td>
+                                <td>ORION</td>
+                                <td><span class="badge bg-info-subtle text-info">GALON</span></td>
+                                <td class="text-end">18</td>
+                                <td class="text-end">$ 14.918</td>
+                                <td class="text-end text-success fw-bold">$ 23.966</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace text-teal fw-bold">COD016</td>
+                                <td>BOLSA JUMBO NEGRA</td>
+                                <td>SURTIPLAST</td>
+                                <td><span class="badge bg-warning-subtle text-dark">PAQ X 10</span></td>
+                                <td class="text-end">92</td>
+                                <td class="text-end">$ 6.100</td>
+                                <td class="text-end text-success fw-bold">$ 9.800</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace text-teal fw-bold">COD034</td>
+                                <td>DETERGENTE EN POLVO</td>
+                                <td>ARA</td>
+                                <td><span class="badge bg-primary-subtle text-primary">KILO</span></td>
+                                <td class="text-end">27</td>
+                                <td class="text-end">$ 3.990</td>
+                                <td class="text-end text-success fw-bold">$ 6.410</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace text-teal fw-bold">COD045</td>
+                                <td>GUANTES IND CALIBRE 35</td>
+                                <td>IMPERIO</td>
+                                <td><span class="badge bg-secondary-subtle text-dark">PAR</span></td>
+                                <td class="text-end">12</td>
+                                <td class="text-end">$ 3.833</td>
+                                <td class="text-end text-success fw-bold">$ 6.158</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row g-2 mt-2">
+                    <div class="col-12 col-md-4">
+                        <div class="p-2 border rounded-2 bg-light">
+                            <i class="fa-solid fa-check text-success me-1"></i><strong>Empaques reconocidos:</strong>
+                            <small class="d-block text-muted">UND, GALON, CUÑETE, KILO, LIBRA, PAQ X 10, PAR, PASTA, 500GR, etc.</small>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-2 border rounded-2 bg-light">
+                            <i class="fa-solid fa-users text-primary me-1"></i><strong>Proveedores:</strong>
+                            <small class="d-block text-muted">Si el proveedor no existe, el sistema lo crea automáticamente en Terceros.</small>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="p-2 border rounded-2 bg-light">
+                            <i class="fa-solid fa-boxes-stacked text-teal me-1"></i><strong>Saldo Inicial:</strong>
+                            <small class="d-block text-muted">La cantidad registrada ingresa de una vez a bodega y genera trazabilidad en Kardex.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Subida -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 text-center">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="py-4 px-3 border border-2 border-dashed rounded-4 bg-light mb-3" id="dropArea">
+                        <i class="fa-solid fa-file-arrow-up fa-3x text-primary mb-3"></i>
+                        <h5 class="fw-bold text-dark">Selecciona o arrastra tu archivo Excel aquí</h5>
+                        <p class="text-muted small mb-3">Formatos compatibles: .xlsx, .xls o .csv</p>
+                        
+                        <input type="file" name="archivo_excel" id="fileInput" class="form-control d-none" accept=".xlsx, .xls, .csv" required onchange="actualizarNombreArchivo(this)">
+                        
+                        <button type="button" class="btn btn-primary px-4 py-2" onclick="document.getElementById('fileInput').click()">
+                            <i class="fa-regular fa-folder-open me-2"></i>Examinar Archivo
+                        </button>
+                        <div id="nombreArchivo" class="fw-bold text-success mt-2 small"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('inventory_bp.list_productos') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success px-4" id="btnProcesar">
+                            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Procesar e Importar al Inventario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function actualizarNombreArchivo(input) {
+    if (input.files && input.files[0]) {
+        document.getElementById('nombreArchivo').innerHTML = '<i class="fa-solid fa-circle-check text-success me-1"></i> Archivo seleccionado: <strong>' + input.files[0].name + '</strong> (' + (input.files[0].size / 1024).toFixed(1) + ' KB)';
+    }
+}
+</script>
+{% endblock %}

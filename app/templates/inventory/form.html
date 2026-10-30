@@ -57,29 +57,37 @@
                             </select>
                         </div>
 
-                        <div class="col-12 col-md-4">
-                            <label class="form-label fw-semibold small">Stock Mínimo de Alerta (Punto de Reorden)</label>
+                        <div class="col-12 col-md-3">
+                            <label class="form-label fw-semibold small">Stock Mínimo de Alerta</label>
                             <input type="number" step="0.01" min="0" name="stock_minimo_alerta" class="form-control" value="{{ producto.stock_minimo_alerta if producto else '0.00' }}">
-                            <small class="text-muted">Alerta si el stock es menor a este valor.</small>
+                            <small class="text-muted">Punto de reorden</small>
                         </div>
 
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label fw-semibold small text-primary">
+                                <i class="fa-solid fa-coins me-1"></i>Costo Unitario ($)
+                            </label>
+                            <input type="number" step="0.01" min="0" name="costo_unitario_base" class="form-control fw-bold border-primary-subtle" placeholder="0.00" value="{{ producto.costo_unitario_base if producto else '0.00' }}">
+                            <small class="text-muted">Costo promedio de compra</small>
+                        </div>
+
+                        <div class="col-12 col-md-3">
                             <label class="form-label fw-semibold small text-success">
-                                <i class="fa-solid fa-tag me-1"></i>Precio de Venta Base ($)
+                                <i class="fa-solid fa-tag me-1"></i>Precio de Venta ($)
                             </label>
                             <input type="number" step="0.01" min="0" name="precio_venta_base" class="form-control fw-bold border-success-subtle" placeholder="0.00" value="{{ producto.precio_venta_base if producto else '0.00' }}">
-                            <small class="text-muted">Precio por unidad base (o granel).</small>
+                            <small class="text-muted">Precio de venta al público</small>
                         </div>
 
-                        <div class="col-12 col-md-4">
-                            <label class="form-label fw-semibold small">Control Sanitario / FEFO</label>
+                        <div class="col-12 col-md-3">
+                            <label class="form-label fw-semibold small">Control FEFO</label>
                             <div class="form-check form-switch mt-2">
                                 <input class="form-check-input" type="checkbox" role="switch" id="switchVencimiento" name="requiere_vencimiento" value="1" {% if not producto or producto.requiere_vencimiento %}checked{% endif %}>
                                 <label class="form-check-label fw-semibold small" for="switchVencimiento">
-                                    ¿Este producto vence? (FEFO)
+                                    ¿Vence?
                                 </label>
                             </div>
-                            <small class="text-muted">Desmarcar para envases o insumos no perecederos.</small>
+                            <small class="text-muted">Control por fecha de vencimiento</small>
                         </div>
 
                         {% if not producto %}

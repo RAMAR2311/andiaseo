@@ -65,6 +65,7 @@ def nuevo_producto():
         tipo_producto = request.form.get('tipo_producto', 'quimico_liquido')
         unidad_base = request.form.get('unidad_base', 'litros')
         stock_minimo = request.form.get('stock_minimo_alerta', type=float) or 0.0
+        costo_unitario = request.form.get('costo_unitario_base', type=float) or 0.0
         precio_venta_base = request.form.get('precio_venta_base', type=float) or 0.0
         descripcion = request.form.get('descripcion', '').strip()
         requiere_vencimiento = bool(request.form.get('requiere_vencimiento'))
@@ -89,9 +90,9 @@ def nuevo_producto():
             tipo_producto=tipo_producto,
             unidad_base=unidad_base,
             stock_minimo_alerta=Decimal(str(stock_minimo)),
+            costo_unitario_base=Decimal(str(costo_unitario)),
             precio_venta_base=Decimal(str(precio_venta_base)),
             stock_actual_total=Decimal('0.0'),
-            costo_unitario_base=Decimal('0.0'),
             requiere_vencimiento=requiere_vencimiento,
             descripcion=descripcion,
             activo=True
@@ -165,6 +166,7 @@ def editar_producto(id):
         categoria_id = request.form.get('categoria_id', type=int)
         tipo_producto = request.form.get('tipo_producto')
         unidad_base = request.form.get('unidad_base')
+        costo_unitario = request.form.get('costo_unitario_base', type=float) or 0.0
         stock_minimo = request.form.get('stock_minimo_alerta', type=float) or 0.0
         precio_venta_base = request.form.get('precio_venta_base', type=float) or 0.0
         descripcion = request.form.get('descripcion', '').strip()
@@ -180,6 +182,7 @@ def editar_producto(id):
         producto.categoria_id = categoria_id
         producto.tipo_producto = tipo_producto
         producto.unidad_base = unidad_base
+        producto.costo_unitario_base = Decimal(str(costo_unitario))
         producto.stock_minimo_alerta = Decimal(str(stock_minimo))
         producto.precio_venta_base = Decimal(str(precio_venta_base))
         producto.descripcion = descripcion
@@ -561,3 +564,49 @@ def api_lotes_fefo(producto_id):
             'es_sugerido': (l.id == (lote_sugerido.id if lote_sugerido else None))
         } for l in lotes]
     })
+
+
+@inventory_bp.route('/importar-masivo', methods=['GET', 'POST'])
+@login_required
+@role_required('admin', 'almacenista')
+def importar_masivo():
+    """Importación masiva de productos e inventario desde Excel o CSV."""
+    from app.services.carga_masiva_service import procesar_archivo_masivo_excel
+    
+    if request.method == 'POST':
+        archivo = request.files.get('archivo_excel')
+        if not archivo or not archivo.filename:
+            flash('Por favor selecciona un archivo Excel (.xlsx, .xls) o CSV.', 'warning')
+            return redirect(url_for('inventory_bp.importar_masivo'))
+        
+        try:
+            resumen = procesar_archivo_masivo_excel(archivo, usuario_id=current_user.id)
+            flash(
+                f"Importación completada con éxito: {resumen['creados']} productos nuevos creados, "
+                f"{resumen['actualizados']} actualizados, {resumen['proveedores_creados']} proveedores registrados "
+                f"y stock inicial asentado en Kardex.",
+                'success'
+            )
+            return redirect(url_for('inventory_bp.list_productos'))
+        except Exception as e:
+            flash(f"Ocurrió un error al procesar el archivo Excel: {str(e)}", 'danger')
+            return redirect(url_for('inventory_bp.importar_masivo'))
+            
+    return render_template('inventory/importar_masivo.html')
+
+
+@inventory_bp.route('/descargar-plantilla-masiva')
+@login_required
+def descargar_plantilla_masiva():
+    """Descarga de la plantilla de ejemplo para carga masiva de productos."""
+    from flask import send_file
+    from app.services.carga_masiva_service import generar_plantilla_carga_masiva_excel
+    
+    excel_stream = generar_plantilla_carga_masiva_excel()
+    return send_file(
+        excel_stream,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name="Plantilla_Carga_Masiva_Andiaseo.xlsx"
+    )
+

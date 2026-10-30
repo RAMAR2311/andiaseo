@@ -25,6 +25,7 @@ def test_routes():
         ('/', 'Dashboard Principal'),
         ('/inventario/', 'Catálogo de Químicos'),
         ('/inventario/nuevo', 'Nuevo Producto'),
+        ('/inventario/importar-masivo', 'Carga Masiva de Productos'),
         ('/inventario/categorias', 'Gestión de Categorías'),
         ('/inventario/entrada', 'Entrada de Mercancía'),
         ('/inventario/despacho', 'Salida por Despacho'),

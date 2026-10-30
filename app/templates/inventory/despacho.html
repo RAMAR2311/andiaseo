@@ -366,9 +366,11 @@ function actualizarLotesFila(idx, prodId, presId) {
         .then(data => {
             loteSelect.innerHTML = '';
             if (!data.lotes || data.lotes.length === 0) {
-                loteSelect.innerHTML = '<option value="">Sin lotes vigentes disponibles</option>';
+                loteSelect.innerHTML = '<option value="">Sin lote específico (Salida directa de stock)</option>';
+                loteSelect.required = false;
                 return;
             }
+            loteSelect.required = true;
             data.lotes.forEach((l, i) => {
                 const opt = document.createElement('option');
                 opt.value = l.id;

@@ -127,7 +127,7 @@ Debes extraer los datos y responder OBLIGATORIAMENTE en formato JSON con la sigu
 }}
 
 Reglas estrictas:
-1. Extrae únicamente las cantidades numéricas reales (enteros o decimales).
+1. Extrae únicamente las cantidades numéricas y costos/precios reales en formato numérico estándar (punto para decimales, sin signos de moneda ni separadores de miles con comas o puntos, ej: si la factura dice "$ 25.000,00" o "25,000", debes convertirlo al número real 25000.0).
 2. Si el documento es una imagen o texto y no logras identificar el lote o vencimiento, deja esos campos como cadenas vacías "".
 3. Limpia nombres de productos eliminando códigos tributarios innecesarios.
 4. Responde ÚNICAMENTE el JSON, sin bloques markdown adicionales ni texto previo.
@@ -171,6 +171,39 @@ Reglas estrictas:
     raw_text = response.choices[0].message.content
     try:
         data = json.loads(raw_text)
+        
+        # Sanitizar números y precios en caso de que vengan como strings con comas o símbolos
+        def limpiar_numero(val):
+            if val is None:
+                return 0.0
+            if isinstance(val, (int, float)):
+                return float(val)
+            s = str(val).replace('$', '').replace('COP', '').strip()
+            # Si tiene formato tipo 15.000,00 o 15,000.00
+            if '.' in s and ',' in s:
+                if s.rfind(',') > s.rfind('.'):
+                    # Formato europeo/latino: 15.000,50 -> 15000.50
+                    s = s.replace('.', '').replace(',', '.')
+                else:
+                    # Formato anglosajón: 15,000.50 -> 15000.50
+                    s = s.replace(',', '')
+            elif ',' in s:
+                # Podría ser 15,50 (decimal) o 15,000 (miles)
+                partes = s.split(',')
+                if len(partes) == 2 and len(partes[1]) == 3:
+                    s = s.replace(',', '') # Miles
+                else:
+                    s = s.replace(',', '.') # Decimal
+            try:
+                return float(s)
+            except Exception:
+                return 0.0
+
+        if 'items' in data and isinstance(data['items'], list):
+            for it in data['items']:
+                it['cantidad'] = limpiar_numero(it.get('cantidad', 1.0))
+                it['costo_unitario'] = limpiar_numero(it.get('costo_unitario', 0.0))
+
         return data
     except Exception as e:
         raise ValueError(f"No se pudo decodificar la respuesta JSON de OpenAI: {str(e)} -> Respuesta: {raw_text}")

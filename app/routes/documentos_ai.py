@@ -118,14 +118,24 @@ def revisar_documento():
             match_prod = Producto.query.filter(Producto.nombre.ilike(f"%{nombre_it[:15]}%")).first()
 
         sugerencia_lote = None
-        if tipo_operacion == 'venta' and match_prod:
-            sugerencia_lote = sugerir_lote_fefo(match_prod.id)
+        match_pres_id = None
+        if match_prod:
+            # Buscar coincidencia de presentación sugerida
+            pres_sugerida = (it.get('presentacion_sugerida') or '').strip().lower()
+            if pres_sugerida:
+                for pr in match_prod.presentaciones:
+                    if pr.nombre_presentacion.lower() in pres_sugerida or pres_sugerida in pr.nombre_presentacion.lower():
+                        match_pres_id = pr.id
+                        break
+            if tipo_operacion == 'venta':
+                sugerencia_lote = sugerir_lote_fefo(match_prod.id, presentacion_id=match_pres_id)
 
         items_procesados.append({
             'index': idx,
             'original': it,
             'match_producto_id': match_prod.id if match_prod else None,
             'match_producto_nombre': match_prod.nombre if match_prod else None,
+            'match_presentacion_id': match_pres_id,
             'sugerencia_lote_id': sugerencia_lote.id if sugerencia_lote else None,
             'sugerencia_lote_numero': sugerencia_lote.numero_lote if sugerencia_lote else None
         })
@@ -142,14 +152,34 @@ def revisar_documento():
         tercero_id = request.form.get('tercero_id', type=int)
         tercero_texto = request.form.get('tercero', '').strip()
         observaciones_gral = request.form.get('observaciones', '').strip()
+
+        def parsear_numero_form(val_str):
+            if not val_str:
+                return 0.0
+            s = str(val_str).replace('$', '').replace('COP', '').strip()
+            if '.' in s and ',' in s:
+                if s.rfind(',') > s.rfind('.'):
+                    s = s.replace('.', '').replace(',', '.')
+                else:
+                    s = s.replace(',', '')
+            elif ',' in s:
+                partes = s.split(',')
+                if len(partes) == 2 and len(partes[1]) == 3:
+                    s = s.replace(',', '')
+                else:
+                    s = s.replace(',', '.')
+            try:
+                return float(s)
+            except Exception:
+                return 0.0
         
         cant_procesados = 0
         try:
             for idx in range(len(items)):
                 prod_id = request.form.get(f'producto_id_{idx}', type=int)
                 pres_id = request.form.get(f'presentacion_id_{idx}', type=int) or None
-                cant = request.form.get(f'cantidad_{idx}', type=float) or 0.0
-                costo_u = request.form.get(f'costo_{idx}', type=float) or 0.0
+                cant = parsear_numero_form(request.form.get(f'cantidad_{idx}'))
+                costo_u = parsear_numero_form(request.form.get(f'costo_{idx}'))
                 num_lote = request.form.get(f'lote_{idx}', '').strip().upper()
                 fecha_venc_str = request.form.get(f'vencimiento_{idx}', '').strip()
                 lote_id_sel = request.form.get(f'lote_id_{idx}', type=int) or None

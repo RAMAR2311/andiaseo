@@ -113,9 +113,9 @@
                                     
                                     <div class="mt-1">
                                         <select name="presentacion_id_{{ idx }}" class="form-select form-select-sm text-secondary">
-                                            <option value="">-- Presentación Base (Granel/Directo) --</option>
+                                            <option value="">-- Sin Presentación / A Granel / Unidad Base --</option>
                                             {% for pres in presentaciones %}
-                                            <option value="{{ pres.id }}">
+                                            <option value="{{ pres.id }}" {% if item.match_presentacion_id == pres.id %}selected{% endif %}>
                                                 {{ pres.producto.nombre }} - {{ pres.nombre_presentacion }}
                                             </option>
                                             {% endfor %}

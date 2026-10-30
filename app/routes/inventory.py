@@ -453,24 +453,46 @@ def despacho():
                 archivo_adjunto.save(os.path.join(upload_folder, nombre_seguro))
                 nombre_archivo_guardado = nombre_seguro
 
+        def parsear_num(val):
+            if not val:
+                return 0.0
+            s = str(val).replace('$', '').replace('COP', '').strip()
+            if '.' in s and ',' in s:
+                if s.rfind(',') > s.rfind('.'):
+                    s = s.replace('.', '').replace(',', '.')
+                else:
+                    s = s.replace(',', '')
+            elif ',' in s:
+                partes = s.split(',')
+                if len(partes) == 2 and len(partes[1]) == 3:
+                    s = s.replace(',', '')
+                else:
+                    s = s.replace(',', '.')
+            try:
+                return float(s)
+            except Exception:
+                return 0.0
+
         cant_procesados = 0
         try:
             for idx in range(len(prod_ids)):
                 p_id = int(prod_ids[idx])
-                cant = float(cantidades[idx]) if idx < len(cantidades) and cantidades[idx] else 0.0
+                cant = parsear_num(cantidades[idx]) if idx < len(cantidades) else 0.0
                 pres_id = request.form.get(f'item_presentacion_id_{idx}', type=int) or None
                 lote_id = request.form.get(f'item_lote_id_{idx}', type=int)
-                precio_u = float(precios_venta[idx]) if idx < len(precios_venta) and precios_venta[idx] else None
+                precio_u = parsear_num(precios_venta[idx]) if idx < len(precios_venta) and precios_venta[idx] else None
 
-                if cant <= 0 or not lote_id:
+                if cant <= 0:
                     continue
 
-                lote = db.session.get(Lote, lote_id)
-                permitido, mensaje_error = validar_salida_lote(lote)
-                if not permitido:
-                    db.session.rollback()
-                    flash(f"Error en producto #{idx+1}: {mensaje_error}", 'danger')
-                    return redirect(url_for('inventory_bp.despacho'))
+                # Si el producto tiene lotes con stock, se valida lote. Si no tiene lotes creados (ej. insumos o sin lote), se permite salida a granel
+                lote = db.session.get(Lote, lote_id) if lote_id else None
+                if lote:
+                    permitido, mensaje_error = validar_salida_lote(lote)
+                    if not permitido:
+                        db.session.rollback()
+                        flash(f"Error en producto #{idx+1}: {mensaje_error}", 'danger')
+                        return redirect(url_for('inventory_bp.despacho'))
 
                 registrar_movimiento(
                     usuario_id=current_user.id,
@@ -479,7 +501,7 @@ def despacho():
                     cantidad=Decimal(str(-cant)),  # Salida: cantidad negativa
                     motivo_observaciones=f"Despacho por Remisión/Venta: {motivo}".strip(),
                     presentacion_id=pres_id,
-                    lote_id=lote_id,
+                    lote_id=lote.id if lote else None,
                     documento_soporte=documento,
                     archivo_comprobante=nombre_archivo_guardado,
                     tercero_id=tercero_id,
@@ -532,7 +554,7 @@ def api_lotes_fefo(producto_id):
         'lotes': [{
             'id': l.id,
             'numero_lote': l.numero_lote,
-            'fecha_vencimiento': l.fecha_vencimiento.strftime('%d/%m/%Y'),
+            'fecha_vencimiento': l.fecha_vencimiento.strftime('%d/%m/%Y') if l.fecha_vencimiento else 'No vence',
             'dias_restantes': l.dias_para_vencer,
             'cantidad_disponible': float(l.cantidad_actual),
             'semaforo': l.semaforo_fefo,

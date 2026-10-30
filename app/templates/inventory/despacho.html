@@ -71,22 +71,34 @@
 
             <div class="card-body p-4">
                 <div class="row g-3">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                         <label class="form-label fw-bold small">Nro. de Remisión / Factura de Venta <span class="text-danger">*</span></label>
                         <input type="text" name="documento_soporte" class="form-control" placeholder="Ej: REM-2026-089 o FAC-3420" required>
                     </div>
 
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                         <label class="form-label fw-bold small">
-                            <i class="fa-solid fa-paperclip text-primary me-1"></i> Adjuntar Remisión Firmada / Soporte
+                            <i class="fa-solid fa-user-check text-primary me-1"></i> Cliente Destino
                         </label>
-                        <input type="file" name="archivo_comprobante" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.webp">
-                        <small class="text-muted">Acta de entrega o documento físico sellado</small>
+                        <select name="tercero_id" class="form-select">
+                            <option value="">-- Seleccionar Cliente --</option>
+                            {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nombre_razon_social }} (NIT: {{ c.documento_nit }})</option>
+                            {% endfor %}
+                        </select>
                     </div>
 
-                    <div class="col-12 col-md-4">
-                        <label class="form-label fw-bold small">Destino / Cliente / Observaciones</label>
-                        <input type="text" name="motivo_observaciones" class="form-control" placeholder="Nombre de cliente, contrato o sucursal...">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-bold small">
+                            <i class="fa-solid fa-paperclip text-primary me-1"></i> Remisión Firmada / Soporte
+                        </label>
+                        <input type="file" name="archivo_comprobante" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.webp">
+                        <small class="text-muted">Acta de entrega o documento sellado</small>
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-bold small">Observaciones / Entrega</label>
+                        <input type="text" name="motivo_observaciones" class="form-control" placeholder="Contrato, sucursal, etc.">
                     </div>
                 </div>
             </div>

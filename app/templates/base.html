@@ -61,6 +61,10 @@
                 <i class="fa-solid fa-tags"></i>
                 <span>Categorías</span>
             </a>
+            <a href="{{ url_for('terceros_bp.list_terceros') }}" class="nav-item-link {% if request.endpoint.startswith('terceros_bp.') %}active{% endif %}">
+                <i class="fa-solid fa-address-book text-warning"></i>
+                <span>Clientes y Proveedores</span>
+            </a>
             <a href="{{ url_for('lotes_bp.list_lotes') }}" class="nav-item-link {% if request.endpoint.startswith('lotes_bp.') %}active{% endif %}">
                 <i class="fa-solid fa-traffic-light"></i>
                 <span>Monitor FEFO / Lotes</span>

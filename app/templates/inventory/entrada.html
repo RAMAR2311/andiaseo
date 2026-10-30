@@ -71,22 +71,34 @@
 
             <div class="card-body p-4">
                 <div class="row g-3">
-                    <div class="col-12 col-md-4">
-                        <label class="form-label fw-bold small">Nro. Factura de Proveedor o Remisión <span class="text-danger">*</span></label>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-bold small">Nro. Factura / Remisión <span class="text-danger">*</span></label>
                         <input type="text" name="documento_soporte" class="form-control" placeholder="Ej: FAC-9821 o REM-445" required>
                     </div>
 
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                         <label class="form-label fw-bold small">
-                            <i class="fa-solid fa-paperclip text-primary me-1"></i> Adjuntar Factura / Comprobante Digital
+                            <i class="fa-solid fa-truck-field text-primary me-1"></i> Proveedor
                         </label>
-                        <input type="file" name="archivo_comprobante" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.webp">
-                        <small class="text-muted">PDF o imagen de la factura física</small>
+                        <select name="tercero_id" class="form-select">
+                            <option value="">-- Seleccionar Proveedor --</option>
+                            {% for p in proveedores %}
+                            <option value="{{ p.id }}">{{ p.nombre_razon_social }} (NIT: {{ p.documento_nit }})</option>
+                            {% endfor %}
+                        </select>
                     </div>
 
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-bold small">
+                            <i class="fa-solid fa-paperclip text-primary me-1"></i> Factura Digital / Soporte
+                        </label>
+                        <input type="file" name="archivo_comprobante" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.webp">
+                        <small class="text-muted">PDF o foto de la factura</small>
+                    </div>
+
+                    <div class="col-12 col-md-3">
                         <label class="form-label fw-bold small">Observaciones Generales</label>
-                        <input type="text" name="observaciones" class="form-control" placeholder="Proveedor, condiciones de entrega, etc.">
+                        <input type="text" name="observaciones" class="form-control" placeholder="Condiciones de entrega, pago, etc.">
                     </div>
                 </div>
             </div>

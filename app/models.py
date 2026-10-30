@@ -46,10 +46,48 @@ class Categoria(db.Model):
     nombre = db.Column(db.String(80), unique=True, nullable=False)
     descripcion = db.Column(db.String(255), nullable=True)
 
+    movimientos = db.relationship('MovimientoKardex', back_populates='categoria', cascade='all, delete-orphan') if hasattr(db, 'nothing') else None
     productos = db.relationship('Producto', back_populates='categoria', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Categoria {self.nombre}>'
+
+
+class Tercero(db.Model):
+    """Modelo para Clientes y Proveedores de Andiaseo."""
+    __tablename__ = 'tercero'
+
+    TIPOS_VALIDOS = {
+        'cliente': 'Cliente',
+        'proveedor': 'Proveedor',
+        'ambos': 'Cliente y Proveedor'
+    }
+
+    id = db.Column(db.Integer, primary_key=True)
+    tipo = db.Column(db.String(20), nullable=False, default='cliente') # 'cliente', 'proveedor', 'ambos'
+    documento_nit = db.Column(db.String(40), unique=True, nullable=False, index=True)
+    nombre_razon_social = db.Column(db.String(150), nullable=False, index=True)
+    telefono = db.Column(db.String(50), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
+    direccion = db.Column(db.String(200), nullable=True)
+    ciudad = db.Column(db.String(80), nullable=True)
+    contacto_nombre = db.Column(db.String(120), nullable=True)
+    activo = db.Column(db.Boolean, default=True, nullable=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    movimientos = db.relationship('MovimientoKardex', back_populates='tercero', lazy='dynamic')
+
+    @property
+    def tipo_legible(self):
+        return self.TIPOS_VALIDOS.get(self.tipo, self.tipo)
+
+    @property
+    def total_facturas_asociadas(self):
+        """Devuelve cuántas operaciones de Kardex están vinculadas a este tercero."""
+        return self.movimientos.count()
+
+    def __repr__(self):
+        return f'<Tercero {self.documento_nit} - {self.nombre_razon_social} ({self.tipo})>'
 
 
 class Producto(db.Model):
@@ -305,6 +343,7 @@ class MovimientoKardex(db.Model):
     producto_id = db.Column(db.Integer, db.ForeignKey('producto.id'), nullable=False)
     presentacion_id = db.Column(db.Integer, db.ForeignKey('presentacion_comercial.id'), nullable=True)
     lote_id = db.Column(db.Integer, db.ForeignKey('lote.id'), nullable=True)
+    tercero_id = db.Column(db.Integer, db.ForeignKey('tercero.id'), nullable=True)
     tipo_movimiento = db.Column(db.String(40), nullable=False, index=True)
     cantidad = db.Column(db.Numeric(12, 2), nullable=False)  # Puede ser positivo (ingreso) o negativo (salida)
     stock_anterior = db.Column(db.Numeric(12, 2), nullable=False)
@@ -317,6 +356,7 @@ class MovimientoKardex(db.Model):
     producto = db.relationship('Producto', back_populates='movimientos')
     presentacion = db.relationship('PresentacionComercial', back_populates='movimientos')
     lote = db.relationship('Lote', back_populates='movimientos')
+    tercero = db.relationship('Tercero', back_populates='movimientos')
 
     @property
     def tipo_legible(self):

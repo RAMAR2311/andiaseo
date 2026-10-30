@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tercero.nombre_razon_social }} - Ficha de Tercero{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{{ url_for('terceros_bp.list_terceros') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h2 class="h3 fw-bold text-dark mb-0">{{ tercero.nombre_razon_social }}</h2>
+                {% if tercero.tipo == 'proveedor' %}
+                <span class="badge bg-info-subtle text-info border border-info">Proveedor</span>
+                {% elif tercero.tipo == 'cliente' %}
+                <span class="badge bg-success-subtle text-success border border-success">Cliente</span>
+                {% else %}
+                <span class="badge bg-warning-subtle text-dark border border-warning">Cliente y Proveedor</span>
+                {% endif %}
+            </div>
+            <div class="text-muted small mt-1">
+                <span class="font-monospace fw-bold me-3"><i class="fa-solid fa-id-card me-1"></i>NIT: {{ tercero.documento_nit }}</span>
+                {% if tercero.ciudad %}<span><i class="fa-solid fa-location-dot me-1"></i>{{ tercero.ciudad }}</span>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('terceros_bp.editar_tercero', id=tercero.id) }}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-pen-to-square me-1"></i>Editar Información
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Información de Contacto -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0">
+                <h5 class="card-title fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-circle-info text-primary me-2"></i>Datos de Contacto
+                </h5>
+            </div>
+            <div class="card-body pt-0">
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted"><i class="fa-solid fa-user-tie me-2"></i>Contacto:</span>
+                        <span class="fw-semibold text-end">{{ tercero.contacto_nombre or 'No especificado' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted"><i class="fa-solid fa-phone me-2"></i>Teléfono:</span>
+                        <span class="fw-semibold text-end">{{ tercero.telefono or 'No registrado' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted"><i class="fa-regular fa-envelope me-2"></i>Email:</span>
+                        <span class="fw-semibold text-end">{{ tercero.email or 'No registrado' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted"><i class="fa-solid fa-map-pin me-2"></i>Dirección:</span>
+                        <span class="fw-semibold text-end">{{ tercero.direccion or 'No registrada' }}</span>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between">
+                        <span class="text-muted"><i class="fa-regular fa-calendar me-2"></i>Registrado:</span>
+                        <span class="text-end">{{ tercero.creado_en|fecha }}</span>
+                    </li>
+                </ul>
+
+                <div class="p-3 bg-light rounded-3 mt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">Total Facturas / Docs:</span>
+                        <span class="fw-bold fs-5 text-primary">{{ facturas|length }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="text-muted small">Líneas de Movimiento:</span>
+                        <span class="fw-bold fs-5 text-dark">{{ movimientos|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de Facturas y Comprobantes -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h5 class="card-title fw-bold mb-0 text-dark">
+                    <i class="fa-solid fa-file-invoice-dollar text-success me-2"></i>Historial de Facturas y Documentos
+                </h5>
+                <span class="badge bg-secondary-subtle text-secondary">{{ facturas|length }} Documentos</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th class="ps-3">No. Documento / Factura</th>
+                                <th>Fecha</th>
+                                <th>Tipo Operación</th>
+                                <th>Productos / Items</th>
+                                <th class="text-end pe-3">Comprobante Adjunto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in facturas %}
+                            <tr>
+                                <td class="ps-3">
+                                    <span class="fw-bold font-monospace text-primary">
+                                        <i class="fa-solid fa-receipt me-1 text-muted"></i>{{ f.documento }}
+                                    </span>
+                                </td>
+                                <td class="small">{{ f.fecha|fecha }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ f.tipo_movimiento }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ f.items|length }} ítem(s)</span>
+                                    <div class="small text-muted text-truncate" style="max-width: 250px;">
+                                        {% for item in f.items %}
+                                            {{ item.presentacion.producto.nombre }} ({{ item.cantidad|number }} {{ item.presentacion.unidad_medida }}){% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="text-end pe-3">
+                                    {% if f.archivo %}
+                                    <a href="{{ url_for('static', filename=f.archivo) }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                        <i class="fa-solid fa-paperclip me-1"></i>Ver Soporte
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted small">Sin adjunto</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="fa-regular fa-folder-closed fa-2x mb-2 text-secondary d-block"></i>
+                                    Aún no hay facturas o despachos asociados a este tercero.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalle Completo de Movimientos de Kardex -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 border-0">
+        <h5 class="card-title fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-list-check text-info me-2"></i>Detalle de Transacciones (Kardex de Tercero)
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Fecha y Hora</th>
+                        <th>Tipo</th>
+                        <th>Factura / Soporte</th>
+                        <th>Producto / Presentación</th>
+                        <th>Lote</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">Costo Unit.</th>
+                        <th class="text-end pe-3">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in movimientos %}
+                    <tr>
+                        <td class="ps-3">{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            {% if m.tipo == 'ENTRADA_COMPRA' %}
+                            <span class="badge bg-success-subtle text-success">Entrada Compra</span>
+                            {% elif m.tipo == 'SALIDA_VENTA' %}
+                            <span class="badge bg-danger-subtle text-danger">Salida Despacho</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary">{{ m.tipo_legible }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="font-monospace fw-bold">{{ m.documento_soporte or '-' }}</td>
+                        <td>
+                            <div class="fw-semibold">{{ m.presentacion.producto.nombre }}</div>
+                            <div class="text-muted small">{{ m.presentacion.nombre }}</div>
+                        </td>
+                        <td class="font-monospace">{{ m.lote.numero_lote if m.lote else '-' }}</td>
+                        <td class="text-end fw-bold">{{ m.cantidad|number }} {{ m.presentacion.unidad_medida }}</td>
+                        <td class="text-end">{{ m.costo_unitario|currency }}</td>
+                        <td class="text-end pe-3 fw-bold">{{ (m.cantidad * m.costo_unitario)|currency }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            No hay movimientos registrados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

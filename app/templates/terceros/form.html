@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}{% if tercero %}Editar {{ tercero.nombre_razon_social }}{% else %}Nuevo Tercero{% endif %} - Andiaseo{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="d-flex align-items-center mb-4 gap-2">
+            <a href="{{ url_for('terceros_bp.list_terceros') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fa-solid fa-arrow-left"></i> Volver
+            </a>
+            <h2 class="h3 fw-bold text-dark mb-0">
+                {% if tercero %}
+                <i class="fa-solid fa-pen-to-square text-primary me-2"></i>Editar: {{ tercero.nombre_razon_social }}
+                {% else %}
+                <i class="fa-solid fa-address-card text-primary me-2"></i>Nuevo Registro de Tercero
+                {% endif %}
+            </h2>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold">Tipo de Tercero <span class="text-danger">*</span></label>
+                            <select name="tipo" class="form-select" required>
+                                {% set tipo_val = tercero.tipo if tercero else tipo_sugerido %}
+                                <option value="cliente" {% if tipo_val == 'cliente' %}selected{% endif %}>Cliente (Comprador de Productos)</option>
+                                <option value="proveedor" {% if tipo_val == 'proveedor' %}selected{% endif %}>Proveedor (Suministrador de Materias Primas/Envases)</option>
+                                <option value="ambos" {% if tipo_val == 'ambos' %}selected{% endif %}>Ambos (Cliente y Proveedor)</option>
+                            </select>
+                            <div class="form-text">Define si aparecerá en compras, despachos o en ambos.</div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold">NIT o Cédula <span class="text-danger">*</span></label>
+                            <input type="text" name="documento_nit" class="form-control font-monospace" placeholder="Ej: 900123456-7" value="{{ tercero.documento_nit if tercero else '' }}" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Razón Social o Nombre Completo <span class="text-danger">*</span></label>
+                            <input type="text" name="nombre_razon_social" class="form-control" placeholder="Ej: Químicos del Valle S.A.S. / Juan Pérez" value="{{ tercero.nombre_razon_social if tercero else '' }}" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Teléfono / WhatsApp</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-phone"></i></span>
+                                <input type="text" name="telefono" class="form-control" placeholder="Ej: 3101234567" value="{{ tercero.telefono if tercero else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Correo Electrónico</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
+                                <input type="email" name="email" class="form-control" placeholder="facturacion@empresa.com" value="{{ tercero.email if tercero else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Ciudad / Municipio</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-location-dot"></i></span>
+                                <input type="text" name="ciudad" class="form-control" placeholder="Ej: Cali, Valle" value="{{ tercero.ciudad if tercero else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Nombre del Contacto / Asesor</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-user-tie"></i></span>
+                                <input type="text" name="contacto_nombre" class="form-control" placeholder="Ej: Diana Martínez (Compras)" value="{{ tercero.contacto_nombre if tercero else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">Dirección Física / Despacho</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-map-pin"></i></span>
+                                <input type="text" name="direccion" class="form-control" placeholder="Ej: Cra 10 # 25-40 Zona Industrial" value="{{ tercero.direccion if tercero else '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('terceros_bp.list_terceros') }}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Tercero
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

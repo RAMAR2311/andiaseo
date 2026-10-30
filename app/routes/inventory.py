@@ -3,7 +3,7 @@ from datetime import datetime, date
 from pathlib import Path
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from app.models import db, Producto, PresentacionComercial, Categoria, Lote, MovimientoKardex
+from app.models import db, Producto, PresentacionComercial, Categoria, Lote, MovimientoKardex, Tercero
 from app.routes.auth import role_required
 from app.services.kardex_service import registrar_movimiento
 from app.services.fefo_service import sugerir_lote_fefo, validar_salida_lote
@@ -292,6 +292,7 @@ def entrada_compra():
     if request.method == 'POST':
         factura_remision = request.form.get('documento_soporte', '').strip()
         observaciones = request.form.get('observaciones', '').strip()
+        tercero_id = request.form.get('tercero_id', type=int)
 
         # Obtener listas de ítems enviados
         prod_ids = request.form.getlist('item_producto_id')
@@ -390,6 +391,7 @@ def entrada_compra():
                     lote_id=lote.id,
                     documento_soporte=factura_remision,
                     archivo_comprobante=nombre_archivo_guardado,
+                    tercero_id=tercero_id,
                     commit=False
                 )
                 cant_procesados += 1
@@ -404,7 +406,8 @@ def entrada_compra():
             return redirect(url_for('inventory_bp.entrada_compra'))
 
     productos = Producto.query.filter_by(activo=True).order_by(Producto.nombre.asc()).all()
-    return render_template('inventory/entrada.html', productos=productos)
+    proveedores = Tercero.query.filter(Tercero.tipo.in_(['proveedor', 'ambos']), Tercero.activo == True).order_by(Tercero.nombre_razon_social.asc()).all()
+    return render_template('inventory/entrada.html', productos=productos, proveedores=proveedores)
 
 
 @inventory_bp.route('/despacho', methods=['GET', 'POST'])
@@ -417,6 +420,7 @@ def despacho():
     if request.method == 'POST':
         documento = request.form.get('documento_soporte', '').strip()
         motivo = request.form.get('motivo_observaciones', '').strip()
+        tercero_id = request.form.get('tercero_id', type=int)
 
         prod_ids = request.form.getlist('item_producto_id')
         cantidades = request.form.getlist('item_cantidad')
@@ -471,6 +475,7 @@ def despacho():
                     lote_id=lote_id,
                     documento_soporte=documento,
                     archivo_comprobante=nombre_archivo_guardado,
+                    tercero_id=tercero_id,
                     commit=False
                 )
                 cant_procesados += 1
@@ -485,7 +490,8 @@ def despacho():
             return redirect(url_for('inventory_bp.despacho'))
 
     productos = Producto.query.filter_by(activo=True).order_by(Producto.nombre.asc()).all()
-    return render_template('inventory/despacho.html', productos=productos)
+    clientes = Tercero.query.filter(Tercero.tipo.in_(['cliente', 'ambos']), Tercero.activo == True).order_by(Tercero.nombre_razon_social.asc()).all()
+    return render_template('inventory/despacho.html', productos=productos, clientes=clientes)
 
 
 @inventory_bp.route('/api/presentaciones/<int:producto_id>')

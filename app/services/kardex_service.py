@@ -10,6 +10,7 @@ def registrar_movimiento(
     motivo_observaciones,
     presentacion_id=None,
     lote_id=None,
+    tercero_id=None,
     documento_soporte=None,
     archivo_comprobante=None,
     commit=True
@@ -89,6 +90,7 @@ def registrar_movimiento(
         producto_id=producto.id,
         presentacion_id=presentacion.id if presentacion else None,
         lote_id=lote.id if lote else None,
+        tercero_id=tercero_id,
         tipo_movimiento=tipo_movimiento,
         cantidad=cantidad_dec,
         stock_anterior=stock_anterior,

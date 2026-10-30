@@ -287,54 +287,26 @@ def categorias():
 @role_required('admin', 'almacenista')
 def entrada_compra():
     """
-    Ingreso de mercancía por compra:
-    Crea o alimenta lote, actualiza stock físico y genera Kardex ENTRADA_COMPRA.
+    Ingreso de mercancía por factura de compra con soporte para múltiples ítems.
     """
     if request.method == 'POST':
-        producto_id = request.form.get('producto_id', type=int)
-        presentacion_id = request.form.get('presentacion_id', type=int) or None
-        cantidad = request.form.get('cantidad', type=float)
-        costo_unitario = request.form.get('costo_unitario', type=float) or 0.0
-        numero_lote = request.form.get('numero_lote', '').strip()
-        fecha_prod_str = request.form.get('fecha_produccion')
-        fecha_venc_str = request.form.get('fecha_vencimiento')
-        registro_sanitario = request.form.get('registro_sanitario', '').strip() or None
         factura_remision = request.form.get('documento_soporte', '').strip()
         observaciones = request.form.get('observaciones', '').strip()
 
-        producto = Producto.query.get_or_404(producto_id)
-        presentacion = db.session.get(PresentacionComercial, presentacion_id) if presentacion_id else None
+        # Obtener listas de ítems enviados
+        prod_ids = request.form.getlist('item_producto_id')
+        cantidades = request.form.getlist('item_cantidad')
+        costos = request.form.getlist('item_costo')
+        lotes = request.form.getlist('item_lote')
+        vencimientos = request.form.getlist('item_vencimiento')
 
-        if not producto_id or not cantidad or cantidad <= 0 or not numero_lote:
-            flash('Producto, cantidad y número de lote son requeridos.', 'danger')
+        if not factura_remision:
+            flash('El número de factura o documento de soporte es obligatorio.', 'danger')
             return redirect(url_for('inventory_bp.entrada_compra'))
 
-        if producto.requiere_vencimiento and not fecha_venc_str:
-            flash(f'El producto "{producto.nombre}" tiene control sanitario activado. La fecha de vencimiento es requerida.', 'danger')
+        if not prod_ids or len(prod_ids) == 0:
+            flash('Debes agregar al menos un producto a la factura.', 'warning')
             return redirect(url_for('inventory_bp.entrada_compra'))
-
-        fecha_prod = datetime.strptime(fecha_prod_str, '%Y-%m-%d').date() if fecha_prod_str else date.today()
-        fecha_venc = datetime.strptime(fecha_venc_str, '%Y-%m-%d').date() if fecha_venc_str else None
-
-        # Actualizar costo promedio ponderado
-        if costo_unitario > 0:
-            if presentacion:
-                stock_act = float(presentacion.stock_actual or 0)
-                costo_act = float(presentacion.costo_promedio_unitario or 0)
-                nuevo_stock = stock_act + cantidad
-                if nuevo_stock > 0:
-                    costo_ponderado = ((stock_act * costo_act) + (cantidad * costo_unitario)) / nuevo_stock
-                    presentacion.costo_promedio_unitario = Decimal(str(round(costo_ponderado, 2)))
-            else:
-                # Producto a granel / unidad base directa
-                stock_act = float(producto.stock_actual_total or 0)
-                costo_act = float(producto.costo_unitario_base or 0)
-                nuevo_stock = stock_act + cantidad
-                if nuevo_stock > 0:
-                    costo_ponderado = ((stock_act * costo_act) + (cantidad * costo_unitario)) / nuevo_stock
-                    producto.costo_unitario_base = Decimal(str(round(costo_ponderado, 2)))
-                else:
-                    producto.costo_unitario_base = Decimal(str(costo_unitario))
 
         # Manejo de Comprobante / Archivo adjunto
         archivo_adjunto = request.files.get('archivo_comprobante')
@@ -350,42 +322,85 @@ def entrada_compra():
                 archivo_adjunto.save(os.path.join(upload_folder, nombre_seguro))
                 nombre_archivo_guardado = nombre_seguro
 
-        # Buscar o crear lote
-        lote = Lote.query.filter_by(numero_lote=numero_lote, producto_id=producto.id).first()
-        if not lote:
-            lote = Lote(
-                producto_id=producto.id,
-                presentacion_id=presentacion.id if presentacion else None,
-                numero_lote=numero_lote,
-                fecha_produccion=fecha_prod,
-                fecha_vencimiento=fecha_venc,
-                registro_sanitario=registro_sanitario,
-                cantidad_inicial=Decimal(str(cantidad)),
-                cantidad_actual=Decimal('0.0'),
-                estado='ACTIVO'
-            )
-            db.session.add(lote)
-            db.session.flush()
-
+        cant_procesados = 0
         try:
-            motivo = f"Recepción de compra | Factura/Remisión: {factura_remision or 'S/N'}. {observaciones}".strip()
-            registrar_movimiento(
-                usuario_id=current_user.id,
-                producto_id=producto.id,
-                tipo_movimiento='ENTRADA_COMPRA',
-                cantidad=Decimal(str(cantidad)),
-                motivo_observaciones=motivo,
-                presentacion_id=presentacion.id if presentacion else None,
-                lote_id=lote.id,
-                documento_soporte=factura_remision,
-                archivo_comprobante=nombre_archivo_guardado,
-                commit=True
-            )
-            flash(f'Entrada de mercancía procesada correctamente. Lote {lote.numero_lote} registrado en Kardex.', 'success')
+            for idx in range(len(prod_ids)):
+                p_id = int(prod_ids[idx])
+                cant = float(cantidades[idx]) if idx < len(cantidades) and cantidades[idx] else 0.0
+                costo_u = float(costos[idx]) if idx < len(costos) and costos[idx] else 0.0
+                num_lote = lotes[idx].strip().upper() if idx < len(lotes) and lotes[idx] else f"LOT-{datetime.now().strftime('%y%m%d')}-{idx+1}"
+                f_venc_str = vencimientos[idx].strip() if idx < len(vencimientos) and vencimientos[idx] else None
+                pres_id = request.form.get(f'item_presentacion_id_{idx}', type=int) or None
+
+                if cant <= 0:
+                    continue
+
+                producto = Producto.query.get(p_id)
+                if not producto:
+                    continue
+
+                presentacion = db.session.get(PresentacionComercial, pres_id) if pres_id else None
+
+                # Actualizar costo promedio ponderado
+                if costo_u > 0:
+                    if presentacion:
+                        stock_act = float(presentacion.stock_actual or 0)
+                        costo_act = float(presentacion.costo_promedio_unitario or 0)
+                        nuevo_stock = stock_act + cant
+                        if nuevo_stock > 0:
+                            costo_ponderado = ((stock_act * costo_act) + (cant * costo_u)) / nuevo_stock
+                            presentacion.costo_promedio_unitario = Decimal(str(round(costo_ponderado, 2)))
+                    else:
+                        stock_act = float(producto.stock_actual_total or 0)
+                        costo_act = float(producto.costo_unitario_base or 0)
+                        nuevo_stock = stock_act + cant
+                        if nuevo_stock > 0:
+                            costo_ponderado = ((stock_act * costo_act) + (cant * costo_u)) / nuevo_stock
+                            producto.costo_unitario_base = Decimal(str(round(costo_ponderado, 2)))
+                        else:
+                            producto.costo_unitario_base = Decimal(str(costo_u))
+
+                # Fecha de vencimiento
+                f_venc = datetime.strptime(f_venc_str, '%Y-%m-%d').date() if f_venc_str else None
+
+                # Crear o buscar lote
+                lote = Lote.query.filter_by(numero_lote=num_lote, producto_id=producto.id).first()
+                if not lote:
+                    lote = Lote(
+                        producto_id=producto.id,
+                        presentacion_id=presentacion.id if presentacion else None,
+                        numero_lote=num_lote,
+                        fecha_produccion=date.today(),
+                        fecha_vencimiento=f_venc,
+                        cantidad_inicial=Decimal(str(cant)),
+                        cantidad_actual=Decimal('0.0'),
+                        estado='ACTIVO'
+                    )
+                    db.session.add(lote)
+                    db.session.flush()
+
+                motivo = f"Recepción de compra | Factura: {factura_remision}. {observaciones}".strip()
+                registrar_movimiento(
+                    usuario_id=current_user.id,
+                    producto_id=producto.id,
+                    tipo_movimiento='ENTRADA_COMPRA',
+                    cantidad=Decimal(str(cant)),
+                    motivo_observaciones=motivo,
+                    presentacion_id=presentacion.id if presentacion else None,
+                    lote_id=lote.id,
+                    documento_soporte=factura_remision,
+                    archivo_comprobante=nombre_archivo_guardado,
+                    commit=False
+                )
+                cant_procesados += 1
+
+            db.session.commit()
+            flash(f'¡Éxito! Se procesó la Factura {factura_remision} con {cant_procesados} productos ingresados a bodega.', 'success')
             return redirect(url_for('inventory_bp.list_productos'))
+
         except Exception as e:
             db.session.rollback()
-            flash(f'Error al registrar la entrada: {str(e)}', 'danger')
+            flash(f'Error al asentar la factura de compra: {str(e)}', 'danger')
             return redirect(url_for('inventory_bp.entrada_compra'))
 
     productos = Producto.query.filter_by(activo=True).order_by(Producto.nombre.asc()).all()
@@ -397,24 +412,21 @@ def entrada_compra():
 @role_required('admin', 'almacenista')
 def despacho():
     """
-    Registro de Salida por Despacho con sugerencia FEFO automática.
+    Registro de Salida por Despacho con soporte para múltiples productos (Factura de Venta / Remisión).
     """
     if request.method == 'POST':
-        producto_id = request.form.get('producto_id', type=int)
-        presentacion_id = request.form.get('presentacion_id', type=int) or None
-        lote_id = request.form.get('lote_id', type=int)
-        cantidad = request.form.get('cantidad', type=float)
         documento = request.form.get('documento_soporte', '').strip()
         motivo = request.form.get('motivo_observaciones', '').strip()
 
-        if not producto_id or not lote_id or not cantidad or cantidad <= 0:
-            flash('Producto, lote y cantidad mayor a 0 son obligatorios.', 'danger')
+        prod_ids = request.form.getlist('item_producto_id')
+        cantidades = request.form.getlist('item_cantidad')
+
+        if not documento:
+            flash('El número de remisión o factura de venta es obligatorio.', 'danger')
             return redirect(url_for('inventory_bp.despacho'))
 
-        lote = db.session.get(Lote, lote_id)
-        permitido, mensaje_error = validar_salida_lote(lote)
-        if not permitido:
-            flash(mensaje_error, 'danger')
+        if not prod_ids or len(prod_ids) == 0:
+            flash('Debes agregar al menos un producto a la orden de despacho.', 'warning')
             return redirect(url_for('inventory_bp.despacho'))
 
         # Manejo de Comprobante / Guía de despacho adjunta
@@ -431,24 +443,45 @@ def despacho():
                 archivo_adjunto.save(os.path.join(upload_folder, nombre_seguro))
                 nombre_archivo_guardado = nombre_seguro
 
+        cant_procesados = 0
         try:
-            registrar_movimiento(
-                usuario_id=current_user.id,
-                producto_id=producto_id,
-                tipo_movimiento='SALIDA_DESPACHO',
-                cantidad=Decimal(str(-cantidad)),  # Salida: cantidad negativa
-                motivo_observaciones=f"Despacho a bodega/cliente: {motivo}".strip(),
-                presentacion_id=presentacion_id,
-                lote_id=lote_id,
-                documento_soporte=documento,
-                archivo_comprobante=nombre_archivo_guardado,
-                commit=True
-            )
-            flash(f'Despacho de {cantidad} unidades del Lote {lote.numero_lote} registrado exitosamente.', 'success')
+            for idx in range(len(prod_ids)):
+                p_id = int(prod_ids[idx])
+                cant = float(cantidades[idx]) if idx < len(cantidades) and cantidades[idx] else 0.0
+                pres_id = request.form.get(f'item_presentacion_id_{idx}', type=int) or None
+                lote_id = request.form.get(f'item_lote_id_{idx}', type=int)
+
+                if cant <= 0 or not lote_id:
+                    continue
+
+                lote = db.session.get(Lote, lote_id)
+                permitido, mensaje_error = validar_salida_lote(lote)
+                if not permitido:
+                    db.session.rollback()
+                    flash(f"Error en producto #{idx+1}: {mensaje_error}", 'danger')
+                    return redirect(url_for('inventory_bp.despacho'))
+
+                registrar_movimiento(
+                    usuario_id=current_user.id,
+                    producto_id=p_id,
+                    tipo_movimiento='SALIDA_DESPACHO',
+                    cantidad=Decimal(str(-cant)),  # Salida: cantidad negativa
+                    motivo_observaciones=f"Despacho por Remisión/Venta: {motivo}".strip(),
+                    presentacion_id=pres_id,
+                    lote_id=lote_id,
+                    documento_soporte=documento,
+                    archivo_comprobante=nombre_archivo_guardado,
+                    commit=False
+                )
+                cant_procesados += 1
+
+            db.session.commit()
+            flash(f'¡Éxito! Despacho {documento} procesado con {cant_procesados} productos descargados del inventario.', 'success')
             return redirect(url_for('reportes_bp.kardex'))
+
         except Exception as e:
             db.session.rollback()
-            flash(f'Error al procesar el despacho: {str(e)}', 'danger')
+            flash(f'Error al procesar el despacho múltiple: {str(e)}', 'danger')
             return redirect(url_for('inventory_bp.despacho'))
 
     productos = Producto.query.filter_by(activo=True).order_by(Producto.nombre.asc()).all()

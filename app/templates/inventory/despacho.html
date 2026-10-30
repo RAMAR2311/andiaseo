@@ -1,211 +1,167 @@
 {% extends 'base.html' %}
 
-{% block title %}Salida por Despacho (Regla FEFO) - ANDIASEO LTDA.{% endblock %}
+{% block title %}Salida por Despacho / Factura de Venta - ANDIASEO LTDA.{% endblock %}
 
 {% block extra_head %}
 <style>
-    /* Estilos del Buscador Inteligente Nativo */
-    .smart-search-box {
-        position: relative;
-    }
+    .smart-search-box { position: relative; }
     .smart-search-input {
-        height: 52px;
+        height: 48px;
         padding-left: 2.75rem;
-        padding-right: 2.5rem;
-        font-size: 1rem;
-        font-weight: 500;
+        font-size: 0.95rem;
         border: 2px solid var(--color-primary);
-        border-radius: 10px;
-        background-color: #ffffff;
-        box-shadow: 0 4px 12px rgba(20, 80, 168, 0.08);
-        transition: all 0.2s ease;
-    }
-    .smart-search-input:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 4px rgba(20, 80, 168, 0.2);
-        outline: none;
+        border-radius: 8px;
     }
     .smart-search-icon {
         position: absolute;
         left: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        font-size: 1.15rem;
         color: var(--color-primary);
         pointer-events: none;
     }
-    .smart-search-clear {
-        position: absolute;
-        right: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        color: #94a3b8;
-        font-size: 1.1rem;
-        cursor: pointer;
-        display: none;
-    }
     .smart-dropdown-results {
         position: absolute;
-        top: calc(100% + 6px);
+        top: 100%;
         left: 0;
         right: 0;
         background: #ffffff;
         border: 1px solid var(--color-border);
-        border-radius: 10px;
-        box-shadow: 0 15px 35px rgba(20, 80, 168, 0.15);
-        max-height: 290px;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(20, 80, 168, 0.15);
+        max-height: 250px;
         overflow-y: auto;
         z-index: 1060;
         display: none;
     }
     .smart-dropdown-item {
-        padding: 0.85rem 1.15rem;
+        padding: 0.65rem 1rem;
         border-bottom: 1px solid #f1f5f9;
         cursor: pointer;
-        transition: background-color 0.15s ease;
     }
-    .smart-dropdown-item:hover, .smart-dropdown-item.active {
-        background-color: var(--color-primary-light);
-    }
-    .selected-product-badge {
-        display: none;
-        background-color: #e8f4fc;
-        border: 1px solid #bce1f7;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        margin-top: 0.5rem;
+    .smart-dropdown-item:hover { background-color: var(--color-primary-light); }
+    .table-items th {
+        background-color: #f8fafc;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: #475569;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-12 col-lg-10">
-        <div class="card border-0 shadow-sm">
+<div class="container-fluid px-0">
+    <form method="POST" id="formDespachoMulti" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Cabecera de Despacho / Factura de Venta -->
+        <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
                 <div>
                     <h4 class="fw-bold text-dark mb-0">
                         <i class="fa-solid fa-truck-ramp-box text-primary me-2"></i>
-                        Salida por Despacho de Mercancía
+                        Salida por Despacho / Factura de Venta (Múltiples Ítems)
                     </h4>
-                    <p class="text-muted small mb-0">Asignación automática y asistida por regla FEFO (Primero en Vencer, Primero en Salir).</p>
+                    <p class="text-muted small mb-0">Descuenta de bodega múltiples productos aplicando de forma individual la regla FEFO.</p>
                 </div>
                 <span class="badge bg-primary px-3 py-2 text-uppercase">
-                    <i class="fa-solid fa-barcode me-1"></i> Búsqueda Asistida
+                    <i class="fa-solid fa-file-invoice-dollar me-1"></i> Despacho Múltiple
                 </span>
             </div>
 
             <div class="card-body p-4">
-                <form method="POST" id="despachoForm" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <!-- Campo oculto con el ID de producto seleccionado -->
-                    <input type="hidden" name="producto_id" id="hiddenProductoId" required>
-
-                    <div class="row g-3">
-                        <!-- BARRA DE BÚSQUEDA INTELIGENTE NATIVA -->
-                        <div class="col-12">
-                            <label class="form-label fw-bold small mb-1">
-                                <i class="fa-solid fa-barcode text-primary me-1"></i>
-                                Buscar Producto por Código o Nombre (o Escanear con Pistola) <span class="text-danger">*</span>
-                            </label>
-                            
-                            <div class="smart-search-box">
-                                <i class="fa-solid fa-magnifying-glass smart-search-icon"></i>
-                                <input type="text" id="smartInput" class="form-control smart-search-input" placeholder="Escribe el código (ej: QUI-CLO-01), nombre o pasa el escáner..." autocomplete="off">
-                                <button type="button" id="clearSearchBtn" class="smart-search-clear"><i class="fa-solid fa-xmark"></i></button>
-                                
-                                <div id="dropdownResults" class="smart-dropdown-results"></div>
-                            </div>
-
-                            <!-- Indicador de Producto Seleccionado -->
-                            <div id="selectedProductCard" class="selected-product-badge align-items-center justify-content-between">
-                                <div>
-                                    <span class="badge bg-primary me-2" id="selectedCodigo"></span>
-                                    <strong class="text-dark" id="selectedNombre"></strong>
-                                    <span class="text-muted small ms-2">(Stock global: <strong id="selectedStock"></strong> <span id="selectedUnidad"></span>)</span>
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" id="btnCambiarProd">
-                                    <i class="fa-solid fa-rotate-left me-1"></i> Cambiar
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Selector Reactivo de Presentaciones Comerciales -->
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-bold small">Presentación Comercial <span class="badge bg-secondary" id="badgeTotalPres">0 disponibles</span></label>
-                            <select name="presentacion_id" id="presentacionSelect" class="form-select form-select-lg">
-                                <option value="">A Granel / Sin Formato Específico</option>
-                            </select>
-                            <small class="text-muted" id="helpPres">Primero selecciona un producto para cargar sus presentaciones.</small>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-bold small">Cantidad a Despachar <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" min="0.01" name="cantidad" id="cantInput" class="form-control form-control-lg" placeholder="0.00" required>
-                            <small id="stockDispHelp" class="text-muted"></small>
-                        </div>
-
-                        <!-- Bloque de Selección de Lote con Sugerencia FEFO -->
-                        <div class="col-12">
-                            <div class="p-3 bg-light rounded-3 border">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="fw-bold text-dark mb-0">
-                                        <i class="fa-solid fa-traffic-light text-primary me-2"></i>Selección de Lote (Regla Sanitaria FEFO)
-                                    </h6>
-                                    <span id="fefoSugeridoBadge" class="badge bg-success fw-bold d-none">
-                                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Sugerencia FEFO Aplicada
-                                    </span>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold small">Lote de Salida <span class="text-danger">*</span></label>
-                                    <select name="lote_id" id="loteSelect" class="form-select form-select-lg" required>
-                                        <option value="">Primero seleccione el producto para cargar lotes FEFO...</option>
-                                    </select>
-                                </div>
-                                <div id="loteInfoBox" class="alert alert-info py-2 px-3 small mb-0 d-none">
-                                    <span id="loteDetalleTexto"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-bold small">Nro. de Remisión / Orden de Entrega</label>
-                            <input type="text" name="documento_soporte" class="form-control form-control-lg" placeholder="Ej: REM-2026-089 o FAC-3420">
-                        </div>
-
-                        <!-- Botón para Cargar Comprobante / Acta de Entrega Digital -->
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-bold small">
-                                <i class="fa-solid fa-paperclip text-primary me-1"></i> Adjuntar Remisión Firmada / Comprobante
-                            </label>
-                            <input type="file" name="archivo_comprobante" class="form-control form-control-lg" accept=".pdf,.png,.jpg,.jpeg,.webp">
-                            <small class="text-muted">Formatos: PDF, JPG, PNG (Acta de entrega firmada o remisión).</small>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-bold small">Destino / Cliente / Observaciones</label>
-                            <input type="text" name="motivo_observaciones" class="form-control form-control-lg" placeholder="Nombre de cliente, contrato o sucursal...">
-                        </div>
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-bold small">Nro. de Remisión / Factura de Venta <span class="text-danger">*</span></label>
+                        <input type="text" name="documento_soporte" class="form-control" placeholder="Ej: REM-2026-089 o FAC-3420" required>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <a href="{{ url_for('inventory_bp.list_productos') }}" class="btn btn-outline-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnConfirmarDespacho">
-                            <i class="fa-solid fa-truck-arrow-right me-1"></i> Procesar Despacho en Kardex
-                        </button>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-bold small">
+                            <i class="fa-solid fa-paperclip text-primary me-1"></i> Adjuntar Remisión Firmada / Soporte
+                        </label>
+                        <input type="file" name="archivo_comprobante" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.webp">
+                        <small class="text-muted">Acta de entrega o documento físico sellado</small>
                     </div>
-                </form>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-bold small">Destino / Cliente / Observaciones</label>
+                        <input type="text" name="motivo_observaciones" class="form-control" placeholder="Nombre de cliente, contrato o sucursal...">
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+
+        <!-- Buscador para Agregar Productos al Despacho -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fa-solid fa-barcode text-primary me-2"></i>
+                    Buscador de Productos (Escanea o Escribe para Agregar a la Orden de Despacho)
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="smart-search-box">
+                    <i class="fa-solid fa-magnifying-glass smart-search-icon"></i>
+                    <input type="text" id="smartInput" class="form-control smart-search-input" placeholder="Escribe el código (ej: QUI-CLO-01), nombre o pasa el escáner de barras..." autocomplete="off">
+                    <div id="dropdownResults" class="smart-dropdown-results"></div>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    <i class="fa-solid fa-info-circle me-1"></i> Haz clic sobre el producto encontrado para añadirlo a la lista de salida.
+                </small>
+            </div>
+        </div>
+
+        <!-- Tabla Dinámica de Productos a Despachar -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0">
+                    <i class="fa-solid fa-list-check text-primary me-2"></i>
+                    Detalle de Ítems a Despachar (<span id="contadorItems">0</span> productos añadidos)
+                </h5>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btnVaciarTabla" style="display: none;">
+                    <i class="fa-solid fa-trash me-1"></i> Vaciar Lista
+                </button>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0 table-items">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">Producto / Químico</th>
+                                <th style="width: 20%;">Presentación Comercial</th>
+                                <th style="width: 32%;">Lote de Salida (Prioridad FEFO)</th>
+                                <th style="width: 15%;">Cant. Despachar</th>
+                                <th style="width: 8%;" class="text-center">Quitar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTableBody">
+                            <tr id="emptyRow">
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-boxes-packing fa-2x mb-2 text-secondary"></i>
+                                    <div>Aún no has agregado ningún producto al despacho.</div>
+                                    <small>Utiliza el buscador superior para agregar todos los productos que componen la factura o remisión.</small>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white p-3 border-top d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('inventory_bp.list_productos') }}" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnConfirmarTodo" disabled>
+                    <i class="fa-solid fa-truck-arrow-right me-1"></i> Procesar Salida de Todos los Productos en Kardex
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-// Catálogo precargado de productos
 const catalogoProductos = [
     {% for p in productos %}
     {
@@ -218,36 +174,24 @@ const catalogoProductos = [
     {% endfor %}
 ];
 
+let itemIndex = 0;
+
 const smartInput = document.getElementById('smartInput');
 const dropdown = document.getElementById('dropdownResults');
-const hiddenId = document.getElementById('hiddenProductoId');
-const clearBtn = document.getElementById('clearSearchBtn');
-const selectedCard = document.getElementById('selectedProductCard');
-const selectedCodigo = document.getElementById('selectedCodigo');
-const selectedNombre = document.getElementById('selectedNombre');
-const selectedUnidad = document.getElementById('selectedUnidad');
-const selectedStock = document.getElementById('selectedStock');
-const btnCambiarProd = document.getElementById('btnCambiarProd');
+const tableBody = document.getElementById('itemsTableBody');
+const emptyRow = document.getElementById('emptyRow');
+const contadorItems = document.getElementById('contadorItems');
+const btnConfirmar = document.getElementById('btnConfirmarTodo');
+const btnVaciar = document.getElementById('btnVaciarTabla');
 
-const presSelect = document.getElementById('presentacionSelect');
-const badgeTotalPres = document.getElementById('badgeTotalPres');
-const helpPres = document.getElementById('helpPres');
-const loteSelect = document.getElementById('loteSelect');
-const fefoBadge = document.getElementById('fefoSugeridoBadge');
-const loteInfoBox = document.getElementById('loteInfoBox');
-const loteDetalle = document.getElementById('loteDetalleTexto');
-const stockDispHelp = document.getElementById('stockDispHelp');
-
-function renderResults(filtro) {
-    const q = (filtro || '').trim().toLowerCase();
+function renderResults(q) {
+    q = (q || '').trim().toLowerCase();
     dropdown.innerHTML = '';
+    if (!q) { dropdown.style.display = 'none'; return; }
 
-    const matches = catalogoProductos.filter(p => {
-        return p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q);
-    });
-
+    const matches = catalogoProductos.filter(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q));
     if (matches.length === 0) {
-        dropdown.innerHTML = '<div class="p-3 text-muted text-center small"><i class="fa-solid fa-box-open me-1"></i> No se encontraron productos.</div>';
+        dropdown.innerHTML = '<div class="p-3 text-muted text-center small">No se encontraron productos.</div>';
         dropdown.style.display = 'block';
         return;
     }
@@ -262,151 +206,142 @@ function renderResults(filtro) {
             </div>
             <span class="text-muted small">Stock: ${p.stock} ${p.unidad}</span>
         `;
-        item.addEventListener('click', () => selectProduct(p));
+        item.addEventListener('click', () => {
+            agregarProductoATabla(p);
+            dropdown.style.display = 'none';
+            smartInput.value = '';
+            smartInput.focus();
+        });
         dropdown.appendChild(item);
     });
-
     dropdown.style.display = 'block';
 }
 
-function selectProduct(p) {
-    hiddenId.value = p.id;
-    selectedCodigo.textContent = p.codigo;
-    selectedNombre.textContent = p.nombre;
-    selectedUnidad.textContent = p.unidad;
-    selectedStock.textContent = p.stock;
+function agregarProductoATabla(p) {
+    if (emptyRow) emptyRow.style.display = 'none';
+    const idx = itemIndex++;
 
-    smartInput.value = `[${p.codigo}] ${p.nombre}`;
-    dropdown.style.display = 'none';
-    clearBtn.style.display = 'block';
+    const tr = document.createElement('tr');
+    tr.id = `row_${idx}`;
+    tr.innerHTML = `
+        <td>
+            <input type="hidden" name="item_producto_id" value="${p.id}">
+            <div class="fw-bold text-dark">[${p.codigo}] ${p.nombre}</div>
+            <small class="text-muted">Stock actual: ${p.stock} ${p.unidad}</small>
+        </td>
+        <td>
+            <select name="item_presentacion_id_${idx}" id="pres_${idx}" class="form-select form-select-sm" onchange="actualizarLotesFila(${idx}, ${p.id}, this.value)">
+                <option value="">A Granel / Sin Formato Específico</option>
+            </select>
+        </td>
+        <td>
+            <select name="item_lote_id_${idx}" id="lote_${idx}" class="form-select form-select-sm" required>
+                <option value="">Consultando lotes FEFO...</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" step="0.01" min="0.01" name="item_cantidad" class="form-control form-control-sm text-center fw-bold" placeholder="0.00" required>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="eliminarFila(${idx})">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </td>
+    `;
 
-    selectedCard.style.display = 'flex';
-    smartInput.style.display = 'none';
+    tableBody.appendChild(tr);
 
-    // 1. Cargar Presentaciones Comerciales
-    presSelect.innerHTML = '<option value="">Cargando presentaciones...</option>';
-    helpPres.textContent = 'Cargando presentaciones...';
-
+    // Cargar presentaciones
     fetch(`/inventario/api/presentaciones/${p.id}`)
         .then(res => res.json())
         .then(data => {
-            presSelect.innerHTML = '<option value="">A Granel / Sin Formato Específico</option>';
-            badgeTotalPres.textContent = `${data.length} disponibles`;
-
-            if (data.length > 0) {
-                data.forEach(pr => {
-                    const opt = document.createElement('option');
-                    opt.value = pr.id;
-                    opt.textContent = `${pr.nombre} (Stock: ${pr.stock} und)`;
-                    presSelect.appendChild(opt);
-                });
-                helpPres.innerHTML = `<span class="text-success"><i class="fa-solid fa-circle-check me-1"></i> ${data.length} presentaciones disponibles.</span>`;
-            } else {
-                helpPres.innerHTML = `<span class="text-secondary">Sin presentaciones individuales; se despacha directo en unidad base.</span>`;
-            }
+            const selectPres = document.getElementById(`pres_${idx}`);
+            data.forEach(pr => {
+                const opt = document.createElement('option');
+                opt.value = pr.id;
+                opt.textContent = `${pr.nombre} (Stock: ${pr.stock} und)`;
+                selectPres.appendChild(opt);
+            });
         });
 
-    // 2. Cargar Lotes FEFO
-    cargarLotesFEFO(p.id, null);
+    // Cargar lotes iniciales
+    actualizarLotesFila(idx, p.id, null);
+    actualizarEstadoTabla();
 }
 
-function cargarLotesFEFO(prodId, presId) {
-    loteSelect.innerHTML = '<option value="">Consultando lotes FEFO en bodega...</option>';
-    fefoBadge.classList.add('d-none');
-    loteInfoBox.classList.add('d-none');
-    stockDispHelp.textContent = '';
+function actualizarLotesFila(idx, prodId, presId) {
+    const loteSelect = document.getElementById(`lote_${idx}`);
+    loteSelect.innerHTML = '<option value="">Consultando lotes...</option>';
 
     let url = `/inventario/api/lotes-fefo/${prodId}`;
-    if (presId) {
-        url += `?presentacion_id=${presId}`;
-    }
+    if (presId) url += `?presentacion_id=${presId}`;
 
     fetch(url)
         .then(res => res.json())
         .then(data => {
             loteSelect.innerHTML = '';
             if (!data.lotes || data.lotes.length === 0) {
-                loteSelect.innerHTML = '<option value="">NO HAY LOTES CON EXISTENCIAS VIGENTES</option>';
+                loteSelect.innerHTML = '<option value="">Sin lotes vigentes disponibles</option>';
                 return;
             }
-
-            data.lotes.forEach((l, idx) => {
+            data.lotes.forEach((l, i) => {
                 const opt = document.createElement('option');
                 opt.value = l.id;
-                opt.textContent = `Lote ${l.numero_lote} | Disp: ${l.cantidad_disponible} | Vence: ${l.fecha_vencimiento} (${l.dias_restantes} días)`;
-                opt.dataset.disponible = l.cantidad_disponible;
-                if (l.es_sugerido || idx === 0) {
-                    opt.selected = true;
-                }
+                opt.textContent = `Lote ${l.numero_lote} | Disp: ${l.cantidad_disponible} | Vence: ${l.fecha_vencimiento}`;
+                if (l.es_sugerido || i === 0) opt.selected = true;
                 loteSelect.appendChild(opt);
             });
-
-            const sugerido = data.lotes.find(l => l.es_sugerido) || data.lotes[0];
-            if (sugerido) {
-                fefoBadge.classList.remove('d-none');
-                loteInfoBox.classList.remove('d-none');
-                loteDetalle.innerHTML = `<strong>Sugerencia FEFO Aplicada:</strong> Lote <strong>${sugerido.numero_lote}</strong> (Vence el ${sugerido.fecha_vencimiento} &bull; Faltan ${sugerido.dias_restantes} días). Disponible: ${sugerido.cantidad_disponible}.`;
-            }
-
-            actualizarStockAyuda();
         });
 }
 
-function actualizarStockAyuda() {
-    const opt = loteSelect.selectedOptions[0];
-    if (opt && opt.dataset.disponible) {
-        stockDispHelp.innerHTML = `<span class="text-primary fw-bold">Stock disponible en este lote: ${opt.dataset.disponible}</span>`;
+function eliminarFila(idx) {
+    const row = document.getElementById(`row_${idx}`);
+    if (row) row.remove();
+    actualizarEstadoTabla();
+}
+
+function actualizarEstadoTabla() {
+    const filas = tableBody.querySelectorAll('tr:not(#emptyRow)');
+    contadorItems.textContent = filas.length;
+    if (filas.length === 0) {
+        if (emptyRow) emptyRow.style.display = 'table-row';
+        btnConfirmar.disabled = true;
+        btnVaciar.style.display = 'none';
     } else {
-        stockDispHelp.textContent = '';
+        if (emptyRow) emptyRow.style.display = 'none';
+        btnConfirmar.disabled = false;
+        btnVaciar.style.display = 'inline-block';
     }
 }
 
-// Eventos de selección y filtrado
-smartInput.addEventListener('input', function() {
-    clearBtn.style.display = this.value ? 'block' : 'none';
-    renderResults(this.value);
+btnVaciar.addEventListener('click', () => {
+    if (confirm('¿Deseas vaciar todos los productos del despacho?')) {
+        tableBody.innerHTML = `
+            <tr id="emptyRow">
+                <td colspan="5" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-boxes-packing fa-2x mb-2 text-secondary"></i>
+                    <div>Aún no has agregado ningún producto al despacho.</div>
+                    <small>Utiliza el buscador superior para agregar todos los productos que componen la factura o remisión.</small>
+                </td>
+            </tr>
+        `;
+        actualizarEstadoTabla();
+    }
 });
 
-smartInput.addEventListener('focus', function() {
-    renderResults(this.value);
-});
-
+smartInput.addEventListener('input', function() { renderResults(this.value); });
+smartInput.addEventListener('focus', function() { if (this.value) renderResults(this.value); });
 smartInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         const q = this.value.trim().toLowerCase();
-        const exactMatch = catalogoProductos.find(p => p.codigo.toLowerCase() === q);
-        if (exactMatch) {
-            selectProduct(exactMatch);
-        } else {
-            const firstMatch = catalogoProductos.find(p => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q));
-            if (firstMatch) selectProduct(firstMatch);
+        const exact = catalogoProductos.find(p => p.codigo.toLowerCase() === q);
+        if (exact) {
+            agregarProductoATabla(exact);
+            this.value = '';
+            dropdown.style.display = 'none';
         }
     }
-});
-
-btnCambiarProd.addEventListener('click', () => {
-    hiddenId.value = '';
-    selectedCard.style.display = 'none';
-    smartInput.style.display = 'block';
-    smartInput.value = '';
-    smartInput.focus();
-    clearBtn.style.display = 'none';
-    presSelect.innerHTML = '<option value="">A Granel / Sin Formato Específico</option>';
-    badgeTotalPres.textContent = '0 disponibles';
-    helpPres.textContent = 'Primero selecciona un producto para cargar sus presentaciones.';
-    loteSelect.innerHTML = '<option value="">Primero seleccione el producto para cargar lotes FEFO...</option>';
-    fefoBadge.classList.add('d-none');
-    loteInfoBox.classList.add('d-none');
-    stockDispHelp.textContent = '';
-});
-
-clearBtn.addEventListener('click', () => {
-    smartInput.value = '';
-    clearBtn.style.display = 'none';
-    hiddenId.value = '';
-    dropdown.style.display = 'none';
-    smartInput.focus();
 });
 
 document.addEventListener('click', function(e) {
@@ -414,14 +349,5 @@ document.addEventListener('click', function(e) {
         dropdown.style.display = 'none';
     }
 });
-
-// Reactividad de presentaciones y lotes
-presSelect.addEventListener('change', function() {
-    if (hiddenId.value) {
-        cargarLotesFEFO(hiddenId.value, this.value || null);
-    }
-});
-
-loteSelect.addEventListener('change', actualizarStockAyuda);
 </script>
 {% endblock %}

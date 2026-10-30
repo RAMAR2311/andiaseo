@@ -58,6 +58,7 @@ def obtener_resumen_vencimientos():
     - Próximos a vencer (31 a 90 días)
     - Rotación (91 a 180 días)
     - Óptimos (> 180 días)
+    - No perecederos (sin fecha de vencimiento)
     """
     hoy = date.today()
     lotes_activos = Lote.query.filter(Lote.estado != 'AGOTADO', Lote.cantidad_actual > 0).all()
@@ -68,11 +69,16 @@ def obtener_resumen_vencimientos():
         'proximos_90d': 0,
         'rotacion_180d': 0,
         'optimos': 0,
+        'no_perecederos': 0,
         'total_lotes_vigentes': 0
     }
     
     for l in lotes_activos:
         if l.estado == 'CUARENTENA':
+            continue
+        if not l.fecha_vencimiento:
+            resumen['no_perecederos'] += 1
+            resumen['total_lotes_vigentes'] += 1
             continue
         dias = (l.fecha_vencimiento - hoy).days
         if dias < 0:

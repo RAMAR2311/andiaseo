@@ -39,16 +39,18 @@ def index():
     # Últimos 10 movimientos de Kardex
     ultimos_movimientos = MovimientoKardex.query.order_by(MovimientoKardex.fecha.desc()).limit(10).all()
 
-    # Lotes críticos (< 30 días o vencidos) para atención inmediata
+    # Lotes críticos (< 30 días o vencidos) para atención inmediata (excluyendo no perecederos)
     lotes_urgentes = Lote.query.filter(
         Lote.estado == 'ACTIVO',
         Lote.cantidad_actual > 0,
+        Lote.fecha_vencimiento.isnot(None),
         Lote.fecha_vencimiento <= date.today()
     ).order_by(Lote.fecha_vencimiento.asc()).limit(5).all()
 
     lotes_proximos = Lote.query.filter(
         Lote.estado == 'ACTIVO',
         Lote.cantidad_actual > 0,
+        Lote.fecha_vencimiento.isnot(None),
         Lote.fecha_vencimiento > date.today(),
         Lote.fecha_vencimiento <= date.fromordinal(date.today().toordinal() + 30)
     ).order_by(Lote.fecha_vencimiento.asc()).limit(5).all()

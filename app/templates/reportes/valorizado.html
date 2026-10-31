@@ -74,7 +74,6 @@
                         <th class="ps-3">Código Ref.</th>
                         <th>Categoría</th>
                         <th>Producto / Insumo</th>
-                        <th>Presentación</th>
                         <th class="text-end">Stock Físico</th>
                         <th class="text-end">Costo Unidad</th>
                         <th class="text-end">Subtotal Costo</th>
@@ -85,52 +84,31 @@
                 </thead>
                 <tbody>
                     {% for p in productos %}
-                        {% if p.presentaciones %}
-                            {% for pres in p.presentaciones %}
-                            {% set subtotal_item = (pres.stock_actual|float or 0.0) * (pres.costo_promedio_unitario|float or 0.0) %}
-                            {% set iva_item = subtotal_item * 0.19 %}
-                            {% set total_item = subtotal_item + iva_item %}
-                            {% set p_venta_unit = pres.precio_referencia|float or p.precio_venta_base|float or 0.0 %}
-                            <tr>
-                                <td class="ps-3 font-monospace text-muted small fw-bold">{{ p.codigo_referencia }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ p.categoria.nombre }}</span></td>
-                                <td class="fw-semibold text-dark">{{ p.nombre }}</td>
-                                <td>{{ pres.nombre_presentacion }}</td>
-                                <td class="text-end">
-                                    <span class="fw-bold text-primary">{{ pres.stock_actual|number(0) }}</span> und
-                                </td>
-                                <td class="text-end">{{ pres.costo_promedio_unitario|currency }}</td>
-                                <td class="text-end fw-semibold text-dark">{{ subtotal_item|currency }}</td>
-                                <td class="text-end text-muted">{{ iva_item|currency }}</td>
-                                <td class="text-end fw-bold text-primary">{{ total_item|currency }}</td>
-                                <td class="text-end pe-3 fw-bold text-success">{{ p_venta_unit|currency }}</td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            {% set subtotal_item = (p.stock_actual_total|float or 0.0) * (p.costo_unitario_base|float or 0.0) %}
-                            {% set iva_item = subtotal_item * 0.19 %}
-                            {% set total_item = subtotal_item + iva_item %}
-                            {% set p_venta_unit = p.precio_venta_base|float or 0.0 %}
-                            <tr>
-                                <td class="ps-3 font-monospace text-muted small fw-bold">{{ p.codigo_referencia }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ p.categoria.nombre }}</span></td>
-                                <td class="fw-semibold text-dark">{{ p.nombre }}</td>
-                                <td class="text-muted fst-italic">Directo / Unidad ({{ p.unidad_legible }})</td>
-                                <td class="text-end">
-                                    <span class="fw-bold text-primary">{{ p.stock_actual_total|number }}</span> {{ p.unidad_legible }}
-                                </td>
-                                <td class="text-end">{{ p.costo_unitario_base|currency }}</td>
-                                <td class="text-end fw-semibold text-dark">{{ subtotal_item|currency }}</td>
-                                <td class="text-end text-muted">{{ iva_item|currency }}</td>
-                                <td class="text-end fw-bold text-primary">{{ total_item|currency }}</td>
-                                <td class="text-end pe-3 fw-bold text-success">{{ p_venta_unit|currency }}</td>
-                            </tr>
-                        {% endif %}
+                        {% set subtotal_item = (p.stock_actual_total|float or 0.0) * (p.costo_unitario_base|float or 0.0) %}
+                        {% set iva_item = subtotal_item * 0.19 %}
+                        {% set total_item = subtotal_item + iva_item %}
+                        {% set p_venta_unit = p.precio_venta_base|float or 0.0 %}
+                        <tr>
+                            <td class="ps-3 font-monospace text-muted small fw-bold">{{ p.codigo_referencia }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ p.categoria.nombre }}</span></td>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ p.nombre }}</div>
+                                <small class="text-muted">{{ p.unidad_legible }}</small>
+                            </td>
+                            <td class="text-end">
+                                <span class="fw-bold text-primary">{{ p.stock_actual_total|number }}</span>
+                            </td>
+                            <td class="text-end">{{ p.costo_unitario_base|currency }}</td>
+                            <td class="text-end fw-semibold text-dark">{{ subtotal_item|currency }}</td>
+                            <td class="text-end text-muted">{{ iva_item|currency }}</td>
+                            <td class="text-end fw-bold text-primary">{{ total_item|currency }}</td>
+                            <td class="text-end pe-3 fw-bold text-success">{{ p_venta_unit|currency }}</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot class="table-light fw-bold">
                     <tr>
-                        <td colspan="6" class="text-end ps-3">TOTALES GENERALES:</td>
+                        <td colspan="5" class="text-end ps-3">TOTALES GENERALES:</td>
                         <td class="text-end text-dark">{{ total_subtotal|currency }}</td>
                         <td class="text-end text-warning">{{ total_iva|currency }}</td>
                         <td class="text-end text-primary fs-6">{{ total_con_iva|currency }}</td>

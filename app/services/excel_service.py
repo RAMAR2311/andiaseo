@@ -175,9 +175,9 @@ def generar_inventario_valorizado_excel(productos):
     headers = [
         "Código Ref.",
         "Categoría",
-        "Producto / Químico",
+        "Producto / Insumo",
         "Tipo",
-        "Presentación Comercial",
+        "Unidad",
         "Stock Físico",
         "Costo Unidad ($)",
         "Subtotal Costo ($)",
@@ -197,73 +197,36 @@ def generar_inventario_valorizado_excel(productos):
 
     for prod in productos:
         cat_nombre = prod.categoria.nombre if prod.categoria else "Sin categoría"
-        
-        # Si tiene presentaciones comerciales
-        if prod.presentaciones:
-            for p in prod.presentaciones:
-                stock_f = float(p.stock_actual or 0)
-                costo_u = float(p.costo_promedio_unitario or 0)
-                subtotal_f = stock_f * costo_u
-                iva_f = subtotal_f * 0.19
-                total_f = subtotal_f + iva_f
-                p_venta = float(p.precio_referencia or prod.precio_venta_base or 0)
-                total_subtotal_gen += subtotal_f
+        stock_f = float(prod.stock_actual_total or 0)
+        costo_u = float(prod.costo_unitario_base or 0)
+        subtotal_f = stock_f * costo_u
+        iva_f = subtotal_f * 0.19
+        total_f = subtotal_f + iva_f
+        p_venta = float(prod.precio_venta_base or 0)
+        total_subtotal_gen += subtotal_f
 
-                fila_datos = [
-                    (prod.codigo_referencia, regular_font, Alignment(horizontal="center")),
-                    (cat_nombre, regular_font, Alignment(horizontal="left")),
-                    (prod.nombre, bold_font, Alignment(horizontal="left")),
-                    (prod.tipo_legible, regular_font, Alignment(horizontal="left")),
-                    (p.nombre_presentacion, regular_font, Alignment(horizontal="left")),
-                    (stock_f, regular_font, Alignment(horizontal="right")),
-                    (costo_u, regular_font, Alignment(horizontal="right")),
-                    (subtotal_f, regular_font, Alignment(horizontal="right")),
-                    (iva_f, regular_font, Alignment(horizontal="right")),
-                    (total_f, bold_font, Alignment(horizontal="right")),
-                    (p_venta, bold_font, Alignment(horizontal="right"))
-                ]
-
-                ws.row_dimensions[fila_actual].height = 20
-                for col_num, (valor, f_style, a_style) in enumerate(fila_datos, 1):
-                    c = ws.cell(row=fila_actual, column=col_num, value=valor)
-                    aplicar_estilos_celda(c, font=f_style, alignment=a_style, border=thin_border)
-                    if col_num == 6:
-                        c.number_format = '#,##0.00'
-                    elif col_num in (7, 8, 9, 10, 11):
-                        c.number_format = '$#,##0.00'
-                fila_actual += 1
-        else:
-            # Producto a granel o insumo sin presentaciones
-            stock_f = float(prod.stock_actual_total or 0)
-            costo_u = float(prod.costo_unitario_base or 0)
-            subtotal_f = stock_f * costo_u
-            iva_f = subtotal_f * 0.19
-            total_f = subtotal_f + iva_f
-            p_venta = float(prod.precio_venta_base or 0)
-            total_subtotal_gen += subtotal_f
-
-            fila_datos = [
-                (prod.codigo_referencia, regular_font, Alignment(horizontal="center")),
-                (cat_nombre, regular_font, Alignment(horizontal="left")),
-                (prod.nombre, bold_font, Alignment(horizontal="left")),
-                (prod.tipo_legible, regular_font, Alignment(horizontal="left")),
-                (f"Unidad ({prod.unidad_legible})", regular_font, Alignment(horizontal="left")),
-                (stock_f, regular_font, Alignment(horizontal="right")),
-                (costo_u, regular_font, Alignment(horizontal="right")),
-                (subtotal_f, regular_font, Alignment(horizontal="right")),
-                (iva_f, regular_font, Alignment(horizontal="right")),
-                (total_f, bold_font, Alignment(horizontal="right")),
-                (p_venta, bold_font, Alignment(horizontal="right"))
-            ]
-            ws.row_dimensions[fila_actual].height = 20
-            for col_num, (valor, f_style, a_style) in enumerate(fila_datos, 1):
-                c = ws.cell(row=fila_actual, column=col_num, value=valor)
-                aplicar_estilos_celda(c, font=f_style, alignment=a_style, border=thin_border)
-                if col_num == 6:
-                    c.number_format = '#,##0.00'
-                elif col_num in (7, 8, 9, 10, 11):
-                    c.number_format = '$#,##0.00'
-            fila_actual += 1
+        fila_datos = [
+            (prod.codigo_referencia, regular_font, Alignment(horizontal="center")),
+            (cat_nombre, regular_font, Alignment(horizontal="left")),
+            (prod.nombre, bold_font, Alignment(horizontal="left")),
+            (prod.tipo_legible, regular_font, Alignment(horizontal="left")),
+            (prod.unidad_legible, regular_font, Alignment(horizontal="center")),
+            (stock_f, regular_font, Alignment(horizontal="right")),
+            (costo_u, regular_font, Alignment(horizontal="right")),
+            (subtotal_f, regular_font, Alignment(horizontal="right")),
+            (iva_f, regular_font, Alignment(horizontal="right")),
+            (total_f, bold_font, Alignment(horizontal="right")),
+            (p_venta, bold_font, Alignment(horizontal="right"))
+        ]
+        ws.row_dimensions[fila_actual].height = 20
+        for col_num, (valor, f_style, a_style) in enumerate(fila_datos, 1):
+            c = ws.cell(row=fila_actual, column=col_num, value=valor)
+            aplicar_estilos_celda(c, font=f_style, alignment=a_style, border=thin_border)
+            if col_num == 6:
+                c.number_format = '#,##0.00'
+            elif col_num in (7, 8, 9, 10, 11):
+                c.number_format = '$#,##0.00'
+        fila_actual += 1
 
     # Fila de Totales Generales
     total_iva_gen = total_subtotal_gen * 0.19

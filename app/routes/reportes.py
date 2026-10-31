@@ -110,17 +110,9 @@ def inventario_valorizado():
     
     total_subtotal = 0.0
     for p in productos:
-        if p.presentaciones and len([pr for pr in p.presentaciones if pr.activo]) > 0:
-            for pres in p.presentaciones:
-                if pres.activo:
-                    stock_f = float(pres.stock_actual or 0)
-                    costo_u = float(pres.costo_promedio_unitario or 0)
-                    total_subtotal += (stock_f * costo_u)
-        else:
-            # Productos a granel o insumos directos
-            stock_f = float(p.stock_actual_total or 0)
-            costo_u = float(p.costo_unitario_base or 0)
-            total_subtotal += (stock_f * costo_u)
+        stock_f = float(p.stock_actual_total or 0)
+        costo_u = float(p.costo_unitario_base or 0)
+        total_subtotal += (stock_f * costo_u)
 
     total_iva = total_subtotal * 0.19
     total_con_iva = total_subtotal + total_iva

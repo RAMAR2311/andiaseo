@@ -145,9 +145,9 @@ def nuevo_producto():
         if cantidad_inicial > 0:
             flash(f'Producto "{producto.nombre}" registrado exitosamente con saldo inicial de {cantidad_inicial} {producto.unidad_base} (Lote: {numero_lote_inicial}).', 'success')
         else:
-            flash(f'Producto "{producto.nombre}" registrado exitosamente con saldo en 0. Puedes ingresar stock por Entrada de Compra o configurar presentaciones.', 'success')
+            flash(f'Producto "{producto.nombre}" registrado exitosamente.', 'success')
         
-        return redirect(url_for('inventory_bp.presentaciones', producto_id=producto.id))
+        return redirect(url_for('inventory_bp.list_productos'))
 
     categorias = Categoria.query.order_by(Categoria.nombre.asc()).all()
     return render_template('inventory/form.html', producto=None, categorias=categorias)

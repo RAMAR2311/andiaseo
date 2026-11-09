@@ -6,7 +6,17 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
-class User(UserMixin, db.Model):
+class BaseModel(db.Model):
+    """Clase base abstracta con inicializador compatible con analizadores estáticos (Pyrefly / Pyright)."""
+    __abstract__ = True
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+
+class User(UserMixin, BaseModel):
     """Modelo de Usuario para autenticación y auditoría en bodega."""
     __tablename__ = 'user'
 
@@ -38,7 +48,7 @@ class User(UserMixin, db.Model):
         return f'<User {self.username} ({self.rol})>'
 
 
-class Categoria(db.Model):
+class Categoria(BaseModel):
     """Categoría de productos químicos, insumos y herramientas."""
     __tablename__ = 'categoria'
 
@@ -53,7 +63,7 @@ class Categoria(db.Model):
         return f'<Categoria {self.nombre}>'
 
 
-class UnidadMedida(db.Model):
+class UnidadMedida(BaseModel):
     """Unidad de medida o empaque para productos (Galón, Cuñete, Paqx10, Kilos, etc.)."""
     __tablename__ = 'unidad_medida'
 
@@ -67,7 +77,7 @@ class UnidadMedida(db.Model):
         return f'<UnidadMedida {self.nombre}>'
 
 
-class Tercero(db.Model):
+class Tercero(BaseModel):
     """Modelo para Clientes y Proveedores de Andiaseo."""
     __tablename__ = 'tercero'
 
@@ -104,7 +114,7 @@ class Tercero(db.Model):
         return f'<Tercero {self.documento_nit} - {self.nombre_razon_social} ({self.tipo})>'
 
 
-class Producto(db.Model):
+class Producto(BaseModel):
     """Producto base: químico líquido/polvo a granel, insumo de empaque o accesorio."""
     __tablename__ = 'producto'
 
@@ -193,7 +203,7 @@ class Producto(db.Model):
         return f'<Producto {self.codigo_referencia} - {self.nombre}>'
 
 
-class PresentacionComercial(db.Model):
+class PresentacionComercial(BaseModel):
     """Presentación comercial del producto (ej: Frasco 500ml, Galón 3.8L, Garrafa 20L)."""
     __tablename__ = 'presentacion_comercial'
 
@@ -225,7 +235,7 @@ class PresentacionComercial(db.Model):
         return f'<PresentacionComercial {self.nombre_presentacion} ({self.producto.nombre if self.producto else "N/A"})>'
 
 
-class Lote(db.Model):
+class Lote(BaseModel):
     """Lote de producción o recepción con trazabilidad sanitaria y fecha de vencimiento (FEFO)."""
     __tablename__ = 'lote'
 
@@ -341,7 +351,7 @@ class Lote(db.Model):
         return f'<Lote {self.numero_lote} ({self.producto.nombre if self.producto else "N/A"}) - {self.cantidad_actual}>'
 
 
-class MovimientoKardex(db.Model):
+class MovimientoKardex(BaseModel):
     """
     Registro histórico inmutable de todos los movimientos de inventario.
     Permite auditar entradas, salidas, fraccionamientos, mermas y ajustes físicos.

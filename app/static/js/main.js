@@ -14,22 +14,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Inicialización de DataTables con traducción al español
     if (typeof $.fn.DataTable !== 'undefined') {
-        // Desactivar alertas modales invasivas de DataTables y registrar en consola
-        $.fn.dataTable.ext.errMode = 'none';
+        // Desactivar alertas modales invasivas (alert) de DataTables y registrar en consola
+        $.fn.dataTable.ext.errMode = function (settings, helpPage, message) {
+            console.warn('DataTables warning:', message);
+        };
 
         $('.datatable-custom').each(function () {
             const table = $(this);
             // Si la tabla solo contiene la fila de "No se encontraron registros" o está vacía, no inicializar DataTables
             const hasDataRows = table.find('tbody tr').length > 0 && !table.find('tbody tr td[colspan]').length;
             if (hasDataRows) {
-                table.DataTable({
-                    language: {
-                        url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-                    },
-                    responsive: true,
-                    pageLength: 25,
-                    order: []
-                });
+                // Verificar que el conteo de th coincida con el primer tr de tbody
+                const thCount = table.find('thead tr:first th').length;
+                const tdCount = table.find('tbody tr:first td').length;
+                if (thCount === tdCount) {
+                    table.DataTable({
+                        language: {
+                            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                        },
+                        responsive: true,
+                        pageLength: 25,
+                        order: []
+                    });
+                } else {
+                    console.warn(`DataTables omitido en tabla porque el número de columnas de cabecera (${thCount}) no coincide con el cuerpo (${tdCount}).`);
+                }
             }
         });
     }

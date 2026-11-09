@@ -116,6 +116,7 @@
                                 </a>
                                 {% if current_user.es_admin %}
                                 <form method="POST" action="{{ url_for('inventory_bp.eliminar_producto', id=p.id) }}" class="d-inline" onsubmit="return confirmarAccion(event, '¿Eliminar producto?', 'Si el producto no registra movimientos en kardex se eliminará de forma definitiva; de lo contrario se desactivará para resguardar la auditoría.', 'Sí, eliminar');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-outline-danger" title="Eliminar Producto" data-bs-toggle="tooltip">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>

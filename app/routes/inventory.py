@@ -211,6 +211,32 @@ def editar_producto(id):
     return render_template('inventory/form.html', producto=producto, categorias=categorias, unidades=unidades)
 
 
+@inventory_bp.route('/<int:id>/eliminar', methods=['POST'])
+@login_required
+@role_required('admin')
+def eliminar_producto(id):
+    """Eliminación de producto con validación de integridad o desactivación lógica."""
+    producto = db.session.get(Producto, id)
+    if not producto:
+        flash('El producto solicitado no existe.', 'warning')
+        return redirect(url_for('inventory_bp.list_productos'))
+
+    # Verificar si tiene movimientos en Kardex
+    movimientos_count = MovimientoKardex.query.filter_by(producto_id=producto.id).count()
+    if movimientos_count > 0:
+        # Si tiene movimientos contables/kardex, no se debe eliminar físicamente para no corromper la auditoría
+        producto.activo = False
+        db.session.commit()
+        flash(f'El producto "{producto.nombre}" tiene {movimientos_count} movimientos históricos en Kardex. Ha sido archivado/desactivado para mantener la trazabilidad contable.', 'info')
+    else:
+        # Si no tiene movimientos (o fue recién creado), se elimina de forma limpia
+        db.session.delete(producto)
+        db.session.commit()
+        flash(f'Producto "{producto.nombre}" eliminado exitosamente del catálogo.', 'success')
+
+    return redirect(url_for('inventory_bp.list_productos'))
+
+
 @inventory_bp.route('/<int:producto_id>/presentaciones', methods=['GET', 'POST'])
 @login_required
 def presentaciones(producto_id):

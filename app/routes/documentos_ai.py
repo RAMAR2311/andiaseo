@@ -187,7 +187,7 @@ def revisar_documento():
                 if not prod_id or cant <= 0:
                     continue  # Si omitieron o no asociaron el producto, salta
 
-                prod = Producto.query.get(prod_id)
+                prod = db.session.get(Producto, prod_id)
                 if not prod:
                     continue
 

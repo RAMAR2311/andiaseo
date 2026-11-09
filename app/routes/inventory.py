@@ -359,7 +359,7 @@ def entrada_compra():
                 if cant <= 0:
                     continue
 
-                producto = Producto.query.get(p_id)
+                producto = db.session.get(Producto, p_id)
                 if not producto:
                     continue
 

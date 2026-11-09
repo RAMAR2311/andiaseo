@@ -49,21 +49,41 @@
                         </div>
 
                         <div class="col-12 col-md-4">
-                            <label class="form-label fw-semibold small">Unidad de Medida Base <span class="text-danger">*</span></label>
-                            <select name="unidad_base" class="form-select" required>
-                                <option value="litros" {% if producto and producto.unidad_base == 'litros' %}selected{% endif %}>Litros (L)</option>
-                                <option value="kilogramos" {% if producto and producto.unidad_base == 'kilogramos' %}selected{% endif %}>Kilogramos (Kg)</option>
-                                <option value="unidades" {% if producto and producto.unidad_base == 'unidades' %}selected{% endif %}>Unidades (Und)</option>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-semibold small mb-0">Unidad de Medida / Empaque <span class="text-danger">*</span></label>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold text-teal" data-bs-toggle="modal" data-bs-target="#modalNuevaUnidad">
+                                    <i class="fa-solid fa-plus-circle me-1"></i>+ Crear Unidad
+                                </button>
+                            </div>
+                            <select name="unidad_base" id="selectUnidadMedida" class="form-select" required>
+                                <option value="">Seleccione o cree una unidad...</option>
+                                {% for u in unidades %}
+                                    <option value="{{ u.nombre }}" {% if producto and (producto.unidad_base|lower == u.nombre|lower or (producto.unidad_base == 'litros' and u.nombre == 'Litros') or (producto.unidad_base == 'kilogramos' and u.nombre == 'Kilogramos') or (producto.unidad_base == 'unidades' and u.nombre == 'Unidades')) %}selected{% endif %}>
+                                        {{ u.nombre }}{% if u.abreviatura %} ({{ u.abreviatura }}){% endif %}
+                                    </option>
+                                {% endfor %}
                             </select>
+                            <small class="text-muted">Ej: Galón, Cuñete, Paqx10, Caja, etc.</small>
                         </div>
 
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-4">
                             <label class="form-label fw-semibold small">Stock Mínimo de Alerta</label>
                             <input type="number" step="0.01" min="0" name="stock_minimo_alerta" class="form-control" value="{{ producto.stock_minimo_alerta if producto else '0.00' }}">
-                            <small class="text-muted">Punto de reorden</small>
+                            <small class="text-muted">Punto de reorden en bodega</small>
                         </div>
 
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-semibold small">Control Sanitario / FEFO</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="switchVencimiento" name="requiere_vencimiento" value="1" {% if not producto or producto.requiere_vencimiento %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold small" for="switchVencimiento">
+                                    ¿Este producto vence?
+                                </label>
+                            </div>
+                            <small class="text-muted">Desmarcar para productos no perecederos</small>
+                        </div>
+
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-semibold small text-primary">
                                 <i class="fa-solid fa-coins me-1"></i>Costo Unitario ($)
                             </label>
@@ -71,23 +91,12 @@
                             <small class="text-muted">Costo promedio de compra</small>
                         </div>
 
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-semibold small text-success">
                                 <i class="fa-solid fa-tag me-1"></i>Precio de Venta ($)
                             </label>
                             <input type="number" step="0.01" min="0" name="precio_venta_base" class="form-control fw-bold border-success-subtle" placeholder="0.00" value="{{ producto.precio_venta_base if producto else '0.00' }}">
                             <small class="text-muted">Precio de venta al público</small>
-                        </div>
-
-                        <div class="col-12 col-md-3">
-                            <label class="form-label fw-semibold small">Control FEFO</label>
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" role="switch" id="switchVencimiento" name="requiere_vencimiento" value="1" {% if not producto or producto.requiere_vencimiento %}checked{% endif %}>
-                                <label class="form-check-label fw-semibold small" for="switchVencimiento">
-                                    ¿Vence?
-                                </label>
-                            </div>
-                            <small class="text-muted">Control por fecha de vencimiento</small>
                         </div>
 
                         {% if not producto %}
@@ -140,4 +149,106 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Crear Nueva Unidad de Medida / Empaque -->
+<div class="modal fade" id="modalNuevaUnidad" tabindex="-1" aria-labelledby="modalNuevaUnidadLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-teal text-white border-0 py-3">
+                <h5 class="modal-title fw-bold" id="modalNuevaUnidadLabel">
+                    <i class="fa-solid fa-boxes-packing me-2"></i>Crear Nueva Unidad de Medida
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="formCrearUnidad" onsubmit="guardarNuevaUnidad(event)">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Nombre de la Unidad / Presentación <span class="text-danger">*</span></label>
+                        <input type="text" id="nuevaUnidadNombre" class="form-control form-control-lg" placeholder="Ej: Galón, Cuñete, Paqx10, Caja..." required>
+                        <small class="text-muted">Nombre claro del empaque o unidad de medida comercial</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Abreviatura / Símbolo (Opcional)</label>
+                        <input type="text" id="nuevaUnidadAbrev" class="form-control" placeholder="Ej: Gal, Cuñ, Paq x 10, Cja...">
+                    </div>
+                    <div id="errorNuevaUnidad" class="alert alert-danger py-2 small d-none"></div>
+                    <div class="d-flex justify-content-end gap-2 pt-2">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-teal px-4" id="btnGuardarUnidad">
+                            <i class="fa-solid fa-check me-1"></i> Crear y Seleccionar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function guardarNuevaUnidad(e) {
+    e.preventDefault();
+    const nombre = document.getElementById('nuevaUnidadNombre').value.trim();
+    const abreviatura = document.getElementById('nuevaUnidadAbrev').value.trim();
+    const errorDiv = document.getElementById('errorNuevaUnidad');
+    const btnGuardar = document.getElementById('btnGuardarUnidad');
+
+    if (!nombre) return;
+
+    btnGuardar.disabled = true;
+    errorDiv.classList.add('d-none');
+
+    try {
+        const response = await fetch("{{ url_for('inventory_bp.api_crear_unidad') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ nombre: nombre, abreviatura: abreviatura })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            errorDiv.textContent = data.error || 'Error al guardar la unidad.';
+            errorDiv.classList.remove('d-none');
+            btnGuardar.disabled = false;
+            return;
+        }
+
+        // Agregar la nueva opción al select y seleccionarla
+        const select = document.getElementById('selectUnidadMedida');
+        const nuevaOpt = document.createElement('option');
+        nuevaOpt.value = data.unidad.nombre;
+        nuevaOpt.textContent = data.unidad.nombre + (data.unidad.abreviatura ? ' (' + data.unidad.abreviatura + ')' : '');
+        nuevaOpt.selected = true;
+        select.appendChild(nuevaOpt);
+
+        // Limpiar y cerrar modal
+        document.getElementById('nuevaUnidadNombre').value = '';
+        document.getElementById('nuevaUnidadAbrev').value = '';
+        const modalEl = document.getElementById('modalNuevaUnidad');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) {
+            modal.hide();
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Unidad Creada',
+            text: `La unidad "${data.unidad.nombre}" ha sido creada y seleccionada.`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+    } catch (err) {
+        errorDiv.textContent = 'Error de conexión con el servidor.';
+        errorDiv.classList.remove('d-none');
+    } finally {
+        btnGuardar.disabled = false;
+    }
+}
+</script>
 {% endblock %}

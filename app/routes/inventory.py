@@ -3,7 +3,7 @@ from datetime import datetime, date
 from pathlib import Path
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from app.models import db, Producto, PresentacionComercial, Categoria, Lote, MovimientoKardex, Tercero
+from app.models import db, Producto, PresentacionComercial, Categoria, Lote, MovimientoKardex, Tercero, UnidadMedida
 from app.routes.auth import role_required
 from app.services.kardex_service import registrar_movimiento
 from app.services.fefo_service import sugerir_lote_fefo, validar_salida_lote
@@ -79,6 +79,13 @@ def nuevo_producto():
             flash('Código, nombre y categoría son obligatorios.', 'danger')
             return redirect(url_for('inventory_bp.nuevo_producto'))
 
+        # Si la unidad creada o seleccionada no está en el catálogo, registrarla automáticamente
+        if unidad_base:
+            unidad_existente = UnidadMedida.query.filter(UnidadMedida.nombre.ilike(unidad_base.strip())).first()
+            if not unidad_existente:
+                db.session.add(UnidadMedida(nombre=unidad_base.strip(), activo=True))
+                db.session.flush()
+
         if Producto.query.filter_by(codigo_referencia=codigo).first():
             flash(f'Ya existe un producto con el código de referencia "{codigo}".', 'warning')
             return redirect(url_for('inventory_bp.nuevo_producto'))
@@ -150,7 +157,8 @@ def nuevo_producto():
         return redirect(url_for('inventory_bp.list_productos'))
 
     categorias = Categoria.query.order_by(Categoria.nombre.asc()).all()
-    return render_template('inventory/form.html', producto=None, categorias=categorias)
+    unidades = UnidadMedida.query.filter_by(activo=True).order_by(UnidadMedida.nombre.asc()).all()
+    return render_template('inventory/form.html', producto=None, categorias=categorias, unidades=unidades)
 
 
 @inventory_bp.route('/<int:id>/editar', methods=['GET', 'POST'])
@@ -177,6 +185,13 @@ def editar_producto(id):
             flash(f'El código "{codigo}" ya está asignado a otro producto.', 'danger')
             return redirect(url_for('inventory_bp.editar_producto', id=producto.id))
 
+        # Si la unidad creada o seleccionada no está en el catálogo, registrarla automáticamente
+        if unidad_base:
+            unidad_existente = UnidadMedida.query.filter(UnidadMedida.nombre.ilike(unidad_base.strip())).first()
+            if not unidad_existente:
+                db.session.add(UnidadMedida(nombre=unidad_base.strip(), activo=True))
+                db.session.flush()
+
         producto.codigo_referencia = codigo
         producto.nombre = nombre
         producto.categoria_id = categoria_id
@@ -192,7 +207,8 @@ def editar_producto(id):
         return redirect(url_for('inventory_bp.list_productos'))
 
     categorias = Categoria.query.order_by(Categoria.nombre.asc()).all()
-    return render_template('inventory/form.html', producto=producto, categorias=categorias)
+    unidades = UnidadMedida.query.filter_by(activo=True).order_by(UnidadMedida.nombre.asc()).all()
+    return render_template('inventory/form.html', producto=producto, categorias=categorias, unidades=unidades)
 
 
 @inventory_bp.route('/<int:producto_id>/presentaciones', methods=['GET', 'POST'])
@@ -609,4 +625,39 @@ def descargar_plantilla_masiva():
         as_attachment=True,
         download_name="Plantilla_Carga_Masiva_Andiaseo.xlsx"
     )
+
+
+@inventory_bp.route('/api/unidades', methods=['POST'])
+@login_required
+@role_required('admin', 'almacenista')
+def api_crear_unidad():
+    """Endpoint AJAX para crear una nueva unidad de medida dinámicamente."""
+    data = request.get_json() or {}
+    nombre = data.get('nombre', '').strip()
+    abreviatura = data.get('abreviatura', '').strip() or None
+
+    if not nombre:
+        return jsonify({'ok': False, 'error': 'El nombre de la unidad es requerido.'}), 400
+
+    existente = UnidadMedida.query.filter(UnidadMedida.nombre.ilike(nombre)).first()
+    if existente:
+        if not existente.activo:
+            existente.activo = True
+            db.session.commit()
+        return jsonify({
+            'ok': True,
+            'mensaje': 'Unidad existente recuperada.',
+            'unidad': {'id': existente.id, 'nombre': existente.nombre, 'abreviatura': existente.abreviatura}
+        })
+
+    nueva = UnidadMedida(nombre=nombre, abreviatura=abreviatura, activo=True)
+    db.session.add(nueva)
+    db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'mensaje': 'Unidad creada exitosamente.',
+        'unidad': {'id': nueva.id, 'nombre': nueva.nombre, 'abreviatura': nueva.abreviatura}
+    }), 201
+
 

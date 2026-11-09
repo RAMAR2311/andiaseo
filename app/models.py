@@ -53,6 +53,20 @@ class Categoria(db.Model):
         return f'<Categoria {self.nombre}>'
 
 
+class UnidadMedida(db.Model):
+    """Unidad de medida o empaque para productos (Galón, Cuñete, Paqx10, Kilos, etc.)."""
+    __tablename__ = 'unidad_medida'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(60), unique=True, nullable=False)
+    abreviatura = db.Column(db.String(20), nullable=True)
+    activo = db.Column(db.Boolean, default=True, nullable=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UnidadMedida {self.nombre}>'
+
+
 class Tercero(db.Model):
     """Modelo para Clientes y Proveedores de Andiaseo."""
     __tablename__ = 'tercero'
@@ -104,7 +118,12 @@ class Producto(db.Model):
     UNIDADES_VALIDAS = {
         'litros': 'Litros (L)',
         'kilogramos': 'Kilogramos (Kg)',
-        'unidades': 'Unidades (Und)'
+        'unidades': 'Unidades (Und)',
+        'galon': 'Galón',
+        'cunete': 'Cuñete',
+        'paqx10': 'Paqx10',
+        'paqx2': 'Paqx2',
+        'caja': 'Caja'
     }
 
     id = db.Column(db.Integer, primary_key=True)
@@ -113,7 +132,7 @@ class Producto(db.Model):
     categoria_id = db.Column(db.Integer, db.ForeignKey('categoria.id'), nullable=False)
     descripcion = db.Column(db.Text, nullable=True)
     tipo_producto = db.Column(db.String(30), nullable=False, default='quimico_liquido')
-    unidad_base = db.Column(db.String(20), nullable=False, default='litros')
+    unidad_base = db.Column(db.String(60), nullable=False, default='Unidades')
     stock_minimo_alerta = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     stock_actual_total = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)
     costo_unitario_base = db.Column(db.Numeric(12, 2), nullable=False, default=0.0)

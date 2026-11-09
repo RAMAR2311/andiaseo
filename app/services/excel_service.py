@@ -175,13 +175,18 @@ def generar_inventario_valorizado_excel(productos):
     headers = [
         "Código Ref.",
         "Categoría",
+        "Producto / Químico",
         "Producto / Insumo",
         "Tipo",
+        "Presentación Comercial",
         "Unidad",
         "Stock Físico",
+        "Costo Unit. Compra ($)",
+        "Subtotal Compra ($)",
         "Costo Unidad ($)",
         "Subtotal Costo ($)",
         "IVA 19% ($)",
+        "Total con IVA ($)"
         "Total con IVA ($)",
         "Precio de Venta ($)"
     ]

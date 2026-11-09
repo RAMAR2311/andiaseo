@@ -5,6 +5,8 @@
 {% block content %}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <div>
+        <h3 class="fw-bold text-dark mb-1">Catálogo de Productos y Químicos</h3>
+        <p class="text-muted small mb-0">Control de stock dual: Granel base vs Presentaciones comerciales físicas.</p>
         <h3 class="fw-bold text-dark mb-1">Catálogo de Productos y Mercancía</h3>
         <p class="text-muted small mb-0">Gestión de existencias, costos unitarios y precios de venta para distribución.</p>
     </div>
@@ -55,6 +57,7 @@
     </div>
 </div>
 
+<!-- Tabla de Productos con Vista Dual -->
 <!-- Tabla de Productos -->
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
@@ -63,9 +66,13 @@
                 <thead class="bg-light">
                     <tr>
                         <th class="ps-3">Código</th>
+                        <th>Producto / Químico</th>
                         <th>Producto / Insumo</th>
                         <th>Categoría</th>
                         <th>Tipo</th>
+                        <th>Stock Base Consolidado</th>
+                        <th>Presentaciones Comerciales (Físicas)</th>
+                        <th>Estado de Reorden</th>
                         <th>Unidad / Empaque</th>
                         <th class="text-end">Stock Actual</th>
                         <th class="text-end">Costo Unit.</th>
@@ -80,13 +87,33 @@
                         <td class="ps-3 fw-bold font-monospace text-teal">{{ p.codigo_referencia }}</td>
                         <td>
                             <div class="fw-bold text-dark">{{ p.nombre }}</div>
+                            <small class="text-muted d-block text-truncate" style="max-width: 280px;">{{ p.descripcion or 'Sin descripción' }}</small>
                             <small class="text-muted d-block text-truncate" style="max-width: 260px;">{{ p.descripcion or 'Sin descripción' }}</small>
                         </td>
                         <td><span class="badge bg-light text-dark border">{{ p.categoria.nombre }}</span></td>
                         <td><small class="badge bg-secondary bg-opacity-10 text-secondary">{{ p.tipo_legible }}</small></td>
                         <td>
+                            <div class="d-flex align-items-baseline gap-1">
+                                <span class="fs-6 fw-bold {% if p.en_alerta_stock %}text-danger{% else %}text-dark{% endif %}">
+                                    {{ p.stock_actual_total|number }}
+                                </span>
+                                <small class="text-muted">{{ p.unidad_legible }}</small>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.75rem;">Mínimo: {{ p.stock_minimo_alerta|number }}</small>
                             <span class="badge bg-light text-dark border fw-normal">{{ p.unidad_legible }}</span>
                         </td>
+                        <td>
+                            {% if p.presentaciones %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for pres in p.presentaciones %}
+                                        <span class="badge bg-light text-dark border p-1" title="Equivalente: {{ pres.equivalente_base|number }} {{ p.unidad_legible }}">
+                                            <strong>{{ pres.nombre_presentacion }}:</strong> {{ pres.stock_actual|number(0) }} und
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted fst-italic small">Granel sin presentaciones</span>
+                            {% endif %}
                         <td class="text-end">
                             <span class="fs-6 fw-bold {% if p.en_alerta_stock %}text-danger{% else %}text-dark{% endif %}">
                                 {{ p.stock_actual_total|number }}
@@ -108,6 +135,9 @@
                         </td>
                         <td class="text-end pe-3">
                             <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('inventory_bp.presentaciones', producto_id=p.id) }}" class="btn btn-outline-secondary" title="Configurar Presentaciones y Precios" data-bs-toggle="tooltip">
+                                    <i class="fa-solid fa-boxes-packing text-teal"></i>
+                                </a>
                                 <a href="{{ url_for('lotes_bp.list_lotes') }}?producto_id={{ p.id }}" class="btn btn-outline-secondary" title="Ver Lotes Sanitarios" data-bs-toggle="tooltip">
                                     <i class="fa-solid fa-traffic-light text-warning"></i>
                                 </a>
@@ -119,6 +149,7 @@
                     </tr>
                     {% else %}
                     <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No se encontraron productos registrados con los filtros seleccionados.</td>
                         <td colspan="10" class="text-center py-4 text-muted">No se encontraron productos registrados con los filtros seleccionados.</td>
                         <td style="display: none;"></td>
                         <td style="display: none;"></td>

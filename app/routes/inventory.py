@@ -3,7 +3,7 @@ from datetime import datetime, date
 from pathlib import Path
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from app.models import db, Producto, PresentacionComercial, Categoria, Lote, Tercero, UnidadMedida
+from app.models import db, Producto, PresentacionComercial, Categoria, Lote, Tercero, UnidadMedida, MovimientoKardex
 from app.routes.auth import role_required
 from app.services.kardex_service import registrar_movimiento
 from app.services.fefo_service import sugerir_lote_fefo, validar_salida_lote

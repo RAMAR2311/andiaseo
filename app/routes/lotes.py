@@ -1,8 +1,8 @@
-from datetime import datetime, date
+from datetime import datetime
 from decimal import Decimal
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required, current_user
-from app.models import db, Lote, Producto, PresentacionComercial
+from flask_login import login_required
+from app.models import db, Lote, Producto
 from app.routes.auth import role_required
 from app.services.fefo_service import obtener_resumen_vencimientos
 

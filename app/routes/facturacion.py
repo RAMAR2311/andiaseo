@@ -1,9 +1,8 @@
-from datetime import datetime, date
+from datetime import datetime
 from decimal import Decimal
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_required, current_user
-from app.models import db, MovimientoKardex, Producto, PresentacionComercial, Lote, Tercero, User
-from app.routes.auth import role_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_required
+from app.models import MovimientoKardex, Tercero
 
 facturacion_bp = Blueprint('facturacion_bp', __name__)
 

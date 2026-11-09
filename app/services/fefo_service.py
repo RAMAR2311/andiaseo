@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date
 from app.models import Lote, db
 
 def obtener_lotes_fefo(producto_id, presentacion_id=None, solo_disponibles=True):

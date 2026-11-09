@@ -2,10 +2,8 @@ import os
 import base64
 import json
 import io
-from pathlib import Path
 from openai import OpenAI
 from pypdf import PdfReader
-from PIL import Image
 
 def get_openai_client():
     api_key = os.environ.get('OPENAI_API_KEY')

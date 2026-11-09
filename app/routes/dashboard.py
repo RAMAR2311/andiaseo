@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date
 from flask import Blueprint, render_template
 from flask_login import login_required
-from app.models import db, Producto, PresentacionComercial, Lote, MovimientoKardex
+from app.models import Producto, Lote, MovimientoKardex
 from app.services.fefo_service import obtener_resumen_vencimientos
 
 dashboard_bp = Blueprint('dashboard_bp', __name__)

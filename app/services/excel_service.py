@@ -24,7 +24,6 @@ def generar_kardex_excel(movimientos, parametros_filtro=None):
 
     # Paleta de colores corporativa (Azul marino industrial y acento verde esmeralda)
     header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")  # Azul marino profundo
-    sub_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")     # Gris claro
     header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
     title_font = Font(name="Calibri", size=16, bold=True, color="1E3A8A")
     subtitle_font = Font(name="Calibri", size=10, italic=True, color="475569")
@@ -175,18 +174,13 @@ def generar_inventario_valorizado_excel(productos):
     headers = [
         "Código Ref.",
         "Categoría",
-        "Producto / Químico",
         "Producto / Insumo",
         "Tipo",
-        "Presentación Comercial",
         "Unidad",
         "Stock Físico",
-        "Costo Unit. Compra ($)",
-        "Subtotal Compra ($)",
         "Costo Unidad ($)",
         "Subtotal Costo ($)",
         "IVA 19% ($)",
-        "Total con IVA ($)"
         "Total con IVA ($)",
         "Precio de Venta ($)"
     ]

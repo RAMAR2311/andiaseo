@@ -1,7 +1,7 @@
-from datetime import datetime, date
+from datetime import datetime
 from flask import Blueprint, render_template, request, send_file
 from flask_login import login_required
-from app.models import db, MovimientoKardex, Producto, PresentacionComercial, Lote, User
+from app.models import db, MovimientoKardex, Producto, User
 from app.services.excel_service import generar_kardex_excel, generar_inventario_valorizado_excel
 
 reportes_bp = Blueprint('reportes_bp', __name__)

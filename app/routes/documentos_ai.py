@@ -1,16 +1,15 @@
 import os
-import json
 from decimal import Decimal
 from datetime import datetime, date, timedelta
 from pathlib import Path
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from app.models import db, Producto, PresentacionComercial, Lote, MovimientoKardex, Categoria, Tercero
+from app.models import db, Producto, PresentacionComercial, Lote, Tercero
 from app.routes.auth import role_required
 from app.services.ai_service import analizar_factura_con_ai
 from app.services.kardex_service import registrar_movimiento
-from app.services.fefo_service import sugerir_lote_fefo, validar_salida_lote
+from app.services.fefo_service import sugerir_lote_fefo
 
 basedir = Path(__file__).resolve().parent.parent.parent
 
@@ -47,7 +46,6 @@ def subir_documento():
             file_bytes = file.read()
 
             # Guardar físicamente el archivo comprobante
-            ext = file.filename.rsplit('.', 1)[-1].lower()
             prefijo = "COMP_AI_ENT" if tipo_op == 'compra' else "COMP_AI_DESP"
             nombre_guardado = f"{prefijo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secure_filename(file.filename)}"
             upload_dir = os.path.join(basedir, 'app', 'static', 'uploads')
